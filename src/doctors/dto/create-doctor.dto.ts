@@ -8,7 +8,6 @@ import {
     IsString,
 } from "class-validator";
 import { IsObjectId } from "class-validator-mongo-object-id";
-import mongoose from "mongoose";
 import { Gender } from "src/shared/shared.enum";
 
 export class CreateDoctorDto {
@@ -29,7 +28,7 @@ export class CreateDoctorDto {
     @IsObjectId({
         message: "not a valid object ID",
     })
-    speciality: mongoose.Schema.Types.ObjectId;
+    speciality: string;
 
     @IsNotEmpty()
     @IsPhoneNumber()

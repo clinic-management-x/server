@@ -3,7 +3,7 @@ import { GetDoctorsDto } from "./dto/get-doctors.dto";
 import { Doctor } from "./schemas/doctor.schema";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
-import { CreateDoctorDto } from "./dto/create-doctor-dto";
+import { CreateDoctorDto } from "./dto/create-doctor.dto";
 import { Speciality } from "./schemas/speciality.schema";
 
 @Injectable()
@@ -14,7 +14,21 @@ export class DoctorsService {
     ) {}
 
     async getAll(query: GetDoctorsDto): Promise<Array<Doctor>> {
-        return this.doctorModel.find().skip(query.skip).limit(query.limit);
+        return this.doctorModel
+            .find({
+                ...(query.search
+                    ? { name: { $regex: query.search, $options: "i" } }
+                    : {}),
+                ...(query.speciality ? { speciality: query.speciality } : {}),
+            })
+            .skip(query.skip)
+            .limit(query.limit)
+            .populate("speciality")
+            .exec();
+    }
+
+    async get(_id: string): Promise<Doctor> {
+        return this.doctorModel.findOne({ _id }).populate("speciality").exec();
     }
 
     async createDoctor(createDoctorDto: CreateDoctorDto): Promise<Doctor> {
