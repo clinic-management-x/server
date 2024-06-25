@@ -1,7 +1,8 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import mongoose, { HydratedDocument } from "mongoose";
+import { HydratedDocument, SchemaTypes, Types } from "mongoose";
 import { Gender } from "src/shared/shared.enum";
 import { Speciality } from "./speciality.schema";
+import { Clinic } from "src/clinics/schemas/clinic.schema";
 
 @Schema()
 export class Doctor {
@@ -17,14 +18,17 @@ export class Doctor {
     @Prop({ required: true, enum: Gender })
     gender: Gender;
 
-    @Prop({ type: mongoose.Schema.Types.ObjectId, ref: Speciality.name })
-    speciality: Speciality; // TODO
+    @Prop({ type: SchemaTypes.ObjectId, ref: Speciality.name })
+    speciality: Speciality;
 
     @Prop({ required: true, unique: true })
     mobile: string;
 
     @Prop()
     email: string;
+
+    @Prop({ type: SchemaTypes.ObjectId, ref: Clinic.name })
+    clinic: Types.ObjectId;
 }
 
 export const DoctorSchema = SchemaFactory.createForClass(Doctor);
