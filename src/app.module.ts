@@ -8,6 +8,7 @@ import { ClinicsModule } from "./clinics/clinics.module";
 import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./users/users.module";
 import { MongooseConfigService } from "./mongoose-config.service";
+import { FilesModule } from "./files/files.module";
 
 @Module({
     imports: [
@@ -19,6 +20,7 @@ import { MongooseConfigService } from "./mongoose-config.service";
         ClinicsModule,
         AuthModule,
         UsersModule,
+        FilesModule,
     ],
     controllers: [AppController],
     providers: [AppService],
