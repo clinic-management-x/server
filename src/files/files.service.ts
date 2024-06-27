@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { Express } from "express";
 import { ObjectId } from "src/shared/typings";
 import { FilePurpose } from "src/shared/shared.enum";
@@ -14,6 +14,7 @@ import { File, FileDocument } from "./schema/file.schema";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import {
+    DeleteObjectsCommand,
     GetObjectCommand,
     PutObjectCommand,
     PutObjectCommandOutput,
@@ -44,6 +45,11 @@ export class FilesService {
         this.bucketName = this.configService.get<string>(S3_BUCKET_NAME);
     }
 
+    getKeyFromUrl(url: string): string {
+        const pathArray = parseUrl(url).path.split("/");
+        return pathArray.slice(2).join("/");
+    }
+
     async uploadFile(
         file: Express.Multer.File,
         clinicId: ObjectId,
@@ -59,9 +65,7 @@ export class FilesService {
         const url = `https://s3.${this.region}.amazonaws.com/${this.bucketName}/${path}`;
 
         const fileDoc = await this.markTemporaryFile(purpose, url, clinicId);
-
-        const pathArray = parseUrl(url).path.split("/");
-        const key = pathArray.slice(2).join("/");
+        const key = this.getKeyFromUrl(url);
 
         return {
             ...fileDoc.toObject(),
@@ -104,5 +108,40 @@ export class FilesService {
             Key: key,
         });
         return getSignedUrl(this.s3Client, command, { expiresIn: 3600 }); // Will last for 1 hour
+    }
+
+    // Check if provided URLs were previously uploaded to S3 and by a particular clinic
+    // This is to prevent other clinics from guessing URLs
+    async checkFilesByUrls(
+        urls: Array<string>,
+        clinicId: ObjectId
+    ): Promise<boolean> {
+        const files = await this.fileModel.find({
+            url: { $in: urls },
+            clinic: clinicId,
+        });
+        if (files.length !== urls.length)
+            throw new UnauthorizedException("Mismatch file URLs");
+        return true;
+    }
+
+    // Delete file from S3 and files collection (eg. when actual data object is deleted)
+    async deleteFiles(urls: Array<string>): Promise<void> {
+        const command = new DeleteObjectsCommand({
+            Bucket: this.bucketName,
+            Delete: {
+                Objects: urls.map((url) => ({ Key: this.getKeyFromUrl(url) })),
+            },
+        });
+
+        try {
+            await this.s3Client.send(command);
+        } catch (err) {
+            console.error(err);
+        }
+
+        await this.fileModel.deleteMany({
+            url: { $in: urls },
+        });
     }
 }

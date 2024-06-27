@@ -7,13 +7,13 @@ import { Clinic } from "src/clinics/schemas/clinic.schema";
 @Schema()
 export class Doctor {
     @Prop()
-    avatarUrl: string;
+    avatarUrl?: string;
 
     @Prop({ required: true })
     name: string;
 
     @Prop()
-    dateOfBirth: Date;
+    dateOfBirth?: Date;
 
     @Prop({ required: true, enum: Gender })
     gender: Gender;
@@ -25,7 +25,10 @@ export class Doctor {
     mobile: string;
 
     @Prop()
-    email: string;
+    email?: string;
+
+    @Prop({ required: true })
+    doctorFee: number; // ?Per consultation
 
     @Prop({ type: SchemaTypes.ObjectId, ref: Clinic.name })
     clinic: Types.ObjectId;

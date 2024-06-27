@@ -2,9 +2,12 @@ import {
     IsDateString,
     IsEmail,
     IsEnum,
+    IsNumber,
     IsOptional,
     IsPhoneNumber,
     IsString,
+    IsUrl,
+    Min,
 } from "class-validator";
 import { IsObjectId } from "class-validator-mongo-object-id";
 import { Gender } from "src/shared/shared.enum";
@@ -36,4 +39,13 @@ export class UpdateDoctorDetailsDto {
     @IsEmail()
     @IsOptional()
     email?: string;
+
+    @IsNumber()
+    @IsOptional()
+    @Min(0)
+    doctorFee?: number;
+
+    @IsOptional()
+    @IsUrl({})
+    avatarUrl?: string;
 }

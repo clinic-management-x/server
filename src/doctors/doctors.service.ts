@@ -8,6 +8,7 @@ import { Speciality, SpecialityDocument } from "./schemas/speciality.schema";
 import { UpdateDoctorDetailsDto } from "./dto/update-doctor-details.dto";
 import { ClinicsService } from "src/clinics/clinics.service";
 import { ObjectList, ObjectId } from "src/shared/typings";
+import { FilesService } from "src/files/files.service";
 
 @Injectable()
 export class DoctorsService {
@@ -15,7 +16,8 @@ export class DoctorsService {
         @InjectModel(Doctor.name) private doctorModel: Model<Doctor>,
         @InjectModel(Speciality.name)
         private specialityModel: Model<Speciality>,
-        private clinicService: ClinicsService
+        private clinicService: ClinicsService,
+        private filesService: FilesService
     ) {}
 
     async getAll(
@@ -62,6 +64,11 @@ export class DoctorsService {
 
         await this.clinicService.get(clinicId);
 
+        const s3AvatarUrl = createDoctorDto.avatarUrl;
+        if (s3AvatarUrl) {
+            await this.filesService.checkFilesByUrls([s3AvatarUrl], clinicId);
+        }
+
         const doctor = new this.doctorModel({
             ...createDoctorDto,
             clinic: clinicId,
@@ -87,10 +94,26 @@ export class DoctorsService {
                 throw new NotFoundException("Speciality Not Found");
         }
 
+        const s3AvatarUrl = dto.avatarUrl;
+        if (s3AvatarUrl) {
+            await this.filesService.checkFilesByUrls([s3AvatarUrl], clinic);
+        }
+
         Object.keys(dto).forEach((key) => {
             doctor[key] = dto[key];
         });
-        return doctor.save();
+        const updatedDoctor = await doctor.save();
+
+        // Remove existing URL?
+        if (
+            s3AvatarUrl &&
+            doctor.avatarUrl &&
+            s3AvatarUrl !== doctor.avatarUrl
+        ) {
+            await this.filesService.deleteFiles([doctor.avatarUrl]);
+        }
+
+        return updatedDoctor;
     }
 
     async getSpecialities(): Promise<Array<SpecialityDocument>> {
