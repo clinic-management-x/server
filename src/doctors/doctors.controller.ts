@@ -16,10 +16,18 @@ import { SpecialityDocument } from "./schemas/speciality.schema";
 import { GetDoctorDto } from "./dto/get-doctor.dto";
 import { UpdateDoctorDetailsDto } from "./dto/update-doctor-details.dto";
 import { ClinicRequest, ObjectList } from "src/shared/typings";
+import { ScheduleDocument } from "./schemas/schedule.schema";
+import { CreateScheduleDto } from "./dto/create-schedule.dto";
+import { SchedulesService } from "./schedules.service";
+import { UpdateScheduleDto } from "./dto/update-schedule.dto";
+import { GetScheduleDto } from "./dto/get-schedule.dto";
 
 @Controller("doctors")
 export class DoctorsController {
-    constructor(private doctorsService: DoctorsService) {}
+    constructor(
+        private doctorsService: DoctorsService,
+        private schedulesService: SchedulesService
+    ) {}
 
     @Get()
     async getAll(
@@ -60,5 +68,41 @@ export class DoctorsController {
         @Request() request: ClinicRequest
     ): Promise<DoctorDocument> {
         return this.doctorsService.updateDetails(_id, data, request.clinic._id);
+    }
+
+    // Doctor schedules
+    @Post("schedules")
+    async createDoctorSchedule(
+        @Body() dto: CreateScheduleDto,
+        @Request() request: ClinicRequest
+    ): Promise<ScheduleDocument> {
+        return this.schedulesService.createDoctorSchedule(
+            dto,
+            request.clinic._id
+        );
+    }
+
+    @Post("schedules")
+    async upateDoctorSchedule(
+        @Param() { _id }: GetScheduleDto,
+        @Body() dto: UpdateScheduleDto,
+        @Request() request: ClinicRequest
+    ): Promise<ScheduleDocument> {
+        return this.schedulesService.updateDoctorSchedule(
+            _id,
+            dto,
+            request.clinic._id
+        );
+    }
+
+    @Post("schedules")
+    async deleteDoctorSchedule(
+        @Param() { _id }: GetScheduleDto,
+        @Request() request: ClinicRequest
+    ): Promise<object> {
+        return this.schedulesService.deleteDoctorSchedule(
+            _id,
+            request.clinic._id
+        );
     }
 }
