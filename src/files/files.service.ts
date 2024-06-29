@@ -45,7 +45,7 @@ export class FilesService {
         this.bucketName = this.configService.get<string>(S3_BUCKET_NAME);
     }
 
-    getKeyFromUrl(url: string): string {
+    private getKeyFromUrl(url: string): string {
         const pathArray = parseUrl(url).path.split("/");
         return pathArray.slice(2).join("/");
     }
@@ -65,11 +65,10 @@ export class FilesService {
         const url = `https://s3.${this.region}.amazonaws.com/${this.bucketName}/${path}`;
 
         const fileDoc = await this.markTemporaryFile(purpose, url, clinicId);
-        const key = this.getKeyFromUrl(url);
 
         return {
             ...fileDoc.toObject(),
-            presignedUrl: await this.createPresignedUrl(key),
+            presignedUrl: await this.createPresignedUrl(url),
         };
     }
 
@@ -102,7 +101,8 @@ export class FilesService {
         return file.save();
     }
 
-    createPresignedUrl(key: string): Promise<string> {
+    createPresignedUrl(url: string): Promise<string> {
+        const key = this.getKeyFromUrl(url);
         const command = new GetObjectCommand({
             Bucket: this.bucketName,
             Key: key,

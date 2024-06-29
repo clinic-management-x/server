@@ -41,6 +41,19 @@ export class DoctorsService {
                 .exec(),
             this.doctorModel.find(filter).countDocuments(),
         ]);
+
+        await Promise.all(
+            data.map(async (doctor) => {
+                if (doctor.avatarUrl) {
+                    const presignedUrl =
+                        await this.filesService.createPresignedUrl(
+                            doctor.avatarUrl
+                        );
+                    return (doctor.avatarUrl = presignedUrl);
+                }
+            })
+        );
+
         return { data, count };
     }
 
@@ -50,6 +63,13 @@ export class DoctorsService {
             .populate("speciality")
             .exec();
         if (!doctor) throw new NotFoundException("Doctor not found");
+
+        if (doctor.avatarUrl) {
+            doctor.avatarUrl = await this.filesService.createPresignedUrl(
+                doctor.avatarUrl
+            );
+        }
+
         return doctor;
     }
 
