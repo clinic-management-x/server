@@ -1,7 +1,16 @@
-import { IsNotEmpty, IsNumber, IsString, Min } from "class-validator";
+import { Type } from "class-transformer";
+import {
+    ArrayNotEmpty,
+    IsArray,
+    IsNotEmpty,
+    IsNumber,
+    IsString,
+    Min,
+    ValidateNested,
+} from "class-validator";
 import { IsObjectId } from "class-validator-mongo-object-id";
 
-export class CreateScheduleDto {
+export class ScheduleDto {
     @IsNotEmpty()
     @IsNumber()
     @Min(0)
@@ -21,6 +30,14 @@ export class CreateScheduleDto {
     @IsNumber()
     @Min(0)
     endTime: number;
+}
+
+export class CreateScheduleDto {
+    @ArrayNotEmpty()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ScheduleDto)
+    schedules: Array<ScheduleDto>;
 
     @IsNotEmpty()
     @IsString()

@@ -1,6 +1,7 @@
 import {
     Body,
     Controller,
+    Delete,
     Get,
     Param,
     Patch,
@@ -17,9 +18,8 @@ import { GetDoctorDto } from "./dto/get-doctor.dto";
 import { UpdateDoctorDetailsDto } from "./dto/update-doctor-details.dto";
 import { ClinicRequest, ObjectList } from "src/shared/typings";
 import { ScheduleDocument } from "./schemas/schedule.schema";
-import { CreateScheduleDto } from "./dto/create-schedule.dto";
+import { CreateScheduleDto, ScheduleDto } from "./dto/create-schedule.dto";
 import { SchedulesService } from "./schedules.service";
-import { UpdateScheduleDto } from "./dto/update-schedule.dto";
 import { GetScheduleDto } from "./dto/get-schedule.dto";
 
 @Controller("doctors")
@@ -57,8 +57,8 @@ export class DoctorsController {
     async get(
         @Param() { _id }: GetDoctorDto,
         @Request() request: ClinicRequest
-    ): Promise<DoctorDocument> {
-        return this.doctorsService.getOne(_id, request.clinic._id);
+    ): Promise<Object> {
+        return this.doctorsService.getPopulated(_id, request.clinic._id);
     }
 
     @Patch(":_id/details")
@@ -72,20 +72,20 @@ export class DoctorsController {
 
     // Doctor schedules
     @Post("schedules")
-    async createDoctorSchedule(
-        @Body() dto: CreateScheduleDto,
+    async createDoctorSchedules(
+        @Body() data: CreateScheduleDto,
         @Request() request: ClinicRequest
-    ): Promise<ScheduleDocument> {
-        return this.schedulesService.createDoctorSchedule(
-            dto,
+    ): Promise<Array<ScheduleDocument>> {
+        return this.schedulesService.createDoctorSchedules(
+            data,
             request.clinic._id
         );
     }
 
-    @Post("schedules")
-    async upateDoctorSchedule(
+    @Patch("schedules/:_id")
+    async updateDoctorSchedule(
         @Param() { _id }: GetScheduleDto,
-        @Body() dto: UpdateScheduleDto,
+        @Body() dto: ScheduleDto,
         @Request() request: ClinicRequest
     ): Promise<ScheduleDocument> {
         return this.schedulesService.updateDoctorSchedule(
@@ -95,7 +95,7 @@ export class DoctorsController {
         );
     }
 
-    @Post("schedules")
+    @Delete("schedules/:_id")
     async deleteDoctorSchedule(
         @Param() { _id }: GetScheduleDto,
         @Request() request: ClinicRequest
