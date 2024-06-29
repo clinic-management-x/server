@@ -7,6 +7,7 @@ import { DoctorsService } from "./doctors.service";
 import { CreateScheduleDto } from "./dto/create-schedule.dto";
 import { ObjectId } from "src/shared/typings";
 import { UpdateScheduleDto } from "./dto/update-schedule.dto";
+import { Types } from "mongoose";
 
 @Injectable()
 export class SchedulesService {
@@ -15,6 +16,19 @@ export class SchedulesService {
         private clinicsService: ClinicsService,
         private doctorsService: DoctorsService
     ) {}
+
+    private async createSchedules(
+        schedules: Array<CreateScheduleDto>,
+        clinic: ObjectId
+    ): Promise<Array<ScheduleDocument>> {
+        return this.scheduleModel.insertMany(
+            schedules.map((schedule) => ({
+                ...schedule,
+                doctor: new Types.ObjectId(schedule.doctor),
+                clinic: new Types.ObjectId(clinic),
+            }))
+        );
+    }
 
     async createDoctorSchedule(
         createScheduleDto: CreateScheduleDto,
