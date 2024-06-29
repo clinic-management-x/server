@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+    Inject,
+    Injectable,
+    NotFoundException,
+    forwardRef,
+} from "@nestjs/common";
 import { GetDoctorsDto } from "./dto/get-doctors.dto";
 import { Doctor, DoctorDocument } from "./schemas/doctor.schema";
 import { InjectModel } from "@nestjs/mongoose";
@@ -9,6 +14,7 @@ import { UpdateDoctorDetailsDto } from "./dto/update-doctor-details.dto";
 import { ClinicsService } from "src/clinics/clinics.service";
 import { ObjectList, ObjectId } from "src/shared/typings";
 import { FilesService } from "src/files/files.service";
+import { SchedulesService } from "./schedules.service";
 
 @Injectable()
 export class DoctorsService {
@@ -17,7 +23,9 @@ export class DoctorsService {
         @InjectModel(Speciality.name)
         private specialityModel: Model<Speciality>,
         private clinicService: ClinicsService,
-        private filesService: FilesService
+        private filesService: FilesService,
+        @Inject(forwardRef(() => SchedulesService))
+        private schedulesService: SchedulesService
     ) {}
 
     async getAll(
@@ -57,7 +65,13 @@ export class DoctorsService {
         return { data, count };
     }
 
-    async getOne(_id: ObjectId, clinic: ObjectId): Promise<DoctorDocument> {
+    async get(_id: ObjectId, clinic: ObjectId): Promise<DoctorDocument> {
+        const doctor = await this.doctorModel.findOne({ _id, clinic }).exec();
+        if (!doctor) throw new NotFoundException("Doctor not found");
+        return doctor;
+    }
+
+    async getPopulated(_id: ObjectId, clinic: ObjectId): Promise<Object> {
         const doctor = await this.doctorModel
             .findOne({ _id, clinic })
             .populate("speciality")
@@ -70,32 +84,44 @@ export class DoctorsService {
             );
         }
 
-        return doctor;
+        const schedules = await this.schedulesService.getDoctorSchedules(_id);
+        return { ...doctor.toObject(), schedules };
     }
 
     async createDoctor(
-        createDoctorDto: CreateDoctorDto,
+        data: CreateDoctorDto,
         clinicId: ObjectId
     ): Promise<DoctorDocument> {
         const speciality = await this.specialityModel.findOne({
-            _id: createDoctorDto.speciality,
+            _id: data.speciality,
         });
         if (!speciality) throw new NotFoundException("Speciality Not Found");
 
         await this.clinicService.get(clinicId);
 
-        const s3AvatarUrl = createDoctorDto.avatarUrl;
+        const s3AvatarUrl = data.avatarUrl;
         if (s3AvatarUrl) {
             await this.filesService.checkFilesByUrls([s3AvatarUrl], clinicId);
         }
 
         const doctor = new this.doctorModel({
-            ...createDoctorDto,
+            ...data,
             clinic: clinicId,
         });
 
         // TODO : We can directly generate user for this doctor?
-        return doctor.save();
+        const createdDoctor = await doctor.save();
+
+        // TODO : Check overlap
+        if (data.schedules.length > 0) {
+            await this.schedulesService.createSchedules(
+                data.schedules,
+                doctor._id,
+                clinicId
+            );
+        }
+
+        return createdDoctor;
     }
 
     async updateDetails(
@@ -134,6 +160,21 @@ export class DoctorsService {
         }
 
         return updatedDoctor;
+    }
+
+    async deleteDoctor(_id: ObjectId, clinic: ObjectId): Promise<Object> {
+        const doctor = await this.doctorModel.findOne({
+            _id,
+            clinic,
+        });
+        if (!doctor) throw new NotFoundException("Doctor not found");
+
+        await this.doctorModel.deleteOne({ _id }).exec();
+        await this.schedulesService.deleteDoctorSchedules(_id);
+        if (doctor.avatarUrl)
+            await this.filesService.deleteFiles([doctor.avatarUrl]);
+
+        return { deletedCount: 1 };
     }
 
     async getSpecialities(): Promise<Array<SpecialityDocument>> {
