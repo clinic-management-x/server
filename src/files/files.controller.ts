@@ -34,7 +34,7 @@ export class FilesController {
         @Body() info: FileDto,
         @Request() request: ClinicRequest
     ) {
-        console.log("req", request);
+      
         return this.filesService.uploadFile(
             file,
             request.clinic._id,
