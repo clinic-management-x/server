@@ -70,6 +70,14 @@ export class DoctorsController {
         return this.doctorsService.updateDetails(_id, data, request.clinic._id);
     }
 
+    @Delete(":_id")
+    async delete(
+        @Param() { _id }: GetDoctorDto,
+        @Request() request: ClinicRequest
+    ): Promise<object> {
+        return this.doctorsService.deleteDoctor(_id, request.clinic._id);
+    }
+
     // Doctor schedules
     @Post("schedules")
     async createDoctorSchedules(

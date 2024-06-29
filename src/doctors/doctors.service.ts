@@ -89,28 +89,39 @@ export class DoctorsService {
     }
 
     async createDoctor(
-        createDoctorDto: CreateDoctorDto,
+        data: CreateDoctorDto,
         clinicId: ObjectId
     ): Promise<DoctorDocument> {
         const speciality = await this.specialityModel.findOne({
-            _id: createDoctorDto.speciality,
+            _id: data.speciality,
         });
         if (!speciality) throw new NotFoundException("Speciality Not Found");
 
         await this.clinicService.get(clinicId);
 
-        const s3AvatarUrl = createDoctorDto.avatarUrl;
+        const s3AvatarUrl = data.avatarUrl;
         if (s3AvatarUrl) {
             await this.filesService.checkFilesByUrls([s3AvatarUrl], clinicId);
         }
 
         const doctor = new this.doctorModel({
-            ...createDoctorDto,
+            ...data,
             clinic: clinicId,
         });
 
         // TODO : We can directly generate user for this doctor?
-        return doctor.save();
+        const createdDoctor = await doctor.save();
+
+        // TODO : Check overlap
+        if (data.schedules.length > 0) {
+            await this.schedulesService.createSchedules(
+                data.schedules,
+                doctor._id,
+                clinicId
+            );
+        }
+
+        return createdDoctor;
     }
 
     async updateDetails(
@@ -149,6 +160,21 @@ export class DoctorsService {
         }
 
         return updatedDoctor;
+    }
+
+    async deleteDoctor(_id: ObjectId, clinic: ObjectId): Promise<Object> {
+        const doctor = await this.doctorModel.findOne({
+            _id,
+            clinic,
+        });
+        if (!doctor) throw new NotFoundException("Doctor not found");
+
+        await this.doctorModel.deleteOne({ _id }).exec();
+        await this.schedulesService.deleteDoctorSchedules(_id);
+        if (doctor.avatarUrl)
+            await this.filesService.deleteFiles([doctor.avatarUrl]);
+
+        return { deletedCount: 1 };
     }
 
     async getSpecialities(): Promise<Array<SpecialityDocument>> {

@@ -22,7 +22,7 @@ export class SchedulesService {
         private doctorsService: DoctorsService
     ) {}
 
-    private async createSchedules(
+    async createSchedules(
         schedules: Array<ScheduleDto>,
         doctor: ObjectId,
         clinic: ObjectId
@@ -42,7 +42,7 @@ export class SchedulesService {
     ): Promise<Array<ScheduleDocument>> {
         await this.clinicsService.get(clinic);
         await this.doctorsService.get(data.doctor, clinic);
-        // TODO: Check schedule is even valid or is overlapping for the same doctor etc.
+        // TODO: Write helpers to check schedule is overlapping for the same doctor etc.
         return this.createSchedules(data.schedules, data.doctor, clinic);
     }
 
@@ -80,5 +80,9 @@ export class SchedulesService {
         doctor: ObjectId
     ): Promise<Array<ScheduleDocument>> {
         return this.scheduleModel.find({ doctor }).exec();
+    }
+
+    async deleteDoctorSchedules(doctor: ObjectId): Promise<object> {
+        return this.scheduleModel.deleteMany({ doctor }).exec();
     }
 }

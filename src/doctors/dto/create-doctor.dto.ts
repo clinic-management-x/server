@@ -1,4 +1,6 @@
+import { Type } from "class-transformer";
 import {
+    IsArray,
     IsDateString,
     IsEmail,
     IsEnum,
@@ -9,9 +11,12 @@ import {
     IsString,
     IsUrl,
     Min,
+    MinLength,
+    ValidateNested,
 } from "class-validator";
 import { IsObjectId } from "class-validator-mongo-object-id";
 import { Gender } from "src/shared/shared.enum";
+import { ScheduleDto } from "./create-schedule.dto";
 
 export class CreateDoctorDto {
     @IsNotEmpty()
@@ -49,4 +54,10 @@ export class CreateDoctorDto {
     @IsOptional()
     @IsUrl({})
     avatarUrl?: string;
+
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ScheduleDto)
+    @IsOptional()
+    schedules: Array<ScheduleDto> = [];
 }
