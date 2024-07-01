@@ -113,26 +113,4 @@ export class DoctorsController {
             request.clinic._id
         );
     }
-
-    @Post("schedules/test")
-    async test(): Promise<boolean> {
-        return this.schedulesService.areSchedulesOverlapping([
-            {
-                start: 3000,
-                end: 4000,
-            },
-            {
-                start: 0,
-                end: 1000,
-            },
-            {
-                start: 1500,
-                end: 1600,
-            },
-            {
-                start: 10000,
-                end: 10080,
-            },
-        ]);
-    }
 }
