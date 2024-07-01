@@ -1,4 +1,5 @@
 import {
+    ConflictException,
     Inject,
     Injectable,
     NotFoundException,
@@ -104,6 +105,13 @@ export class DoctorsService {
             await this.filesService.checkFilesByUrls([s3AvatarUrl], clinicId);
         }
 
+        if (
+            data.schedules.length > 0 &&
+            this.schedulesService.areSchedulesOverlapping(data.schedules)
+        ) {
+            throw new ConflictException("Schedules overlap");
+        }
+
         const doctor = new this.doctorModel({
             ...data,
             clinic: clinicId,
@@ -112,7 +120,6 @@ export class DoctorsService {
         // TODO : We can directly generate user for this doctor?
         const createdDoctor = await doctor.save();
 
-        // TODO : Check overlap
         if (data.schedules.length > 0) {
             await this.schedulesService.createSchedules(
                 data.schedules,

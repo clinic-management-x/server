@@ -1,4 +1,5 @@
 import {
+    ConflictException,
     Inject,
     Injectable,
     NotFoundException,
@@ -12,6 +13,7 @@ import { DoctorsService } from "./doctors.service";
 import { CreateScheduleDto, ScheduleDto } from "./dto/create-schedule.dto";
 import { ObjectId } from "src/shared/typings";
 import { Types } from "mongoose";
+import * as R from "ramda";
 
 @Injectable()
 export class SchedulesService {
@@ -42,7 +44,26 @@ export class SchedulesService {
     ): Promise<Array<ScheduleDocument>> {
         await this.clinicsService.get(clinic);
         await this.doctorsService.get(data.doctor, clinic);
-        // TODO: Write helpers to check schedule is overlapping for the same doctor etc.
+
+        const existingSchedules = await this.getDoctorSchedules(
+            data.doctor
+        ).then(
+            R.map(
+                (schedule): ScheduleDto => ({
+                    start: schedule.start,
+                    end: schedule.end,
+                })
+            )
+        );
+
+        if (
+            this.areSchedulesOverlapping(
+                existingSchedules.concat(data.schedules)
+            )
+        ) {
+            throw new ConflictException("Schedules overlap");
+        }
+
         return this.createSchedules(data.schedules, data.doctor, clinic);
     }
 
@@ -56,6 +77,21 @@ export class SchedulesService {
             clinic,
         });
         if (!schedule) throw new NotFoundException("Schedule not found");
+
+        const existingSchedules = await this.getDoctorSchedules(
+            schedule.doctor
+        ).then(
+            R.map((scheduleObj): ScheduleDto => {
+                if (scheduleObj._id.toString() === schedule._id.toString()) {
+                    return dto;
+                }
+                return { start: scheduleObj.start, end: scheduleObj.end };
+            })
+        );
+
+        if (this.areSchedulesOverlapping(existingSchedules)) {
+            throw new ConflictException("Schedules overlap");
+        }
 
         Object.keys(dto).forEach((key) => {
             schedule[key] = dto[key];
@@ -84,5 +120,36 @@ export class SchedulesService {
 
     async deleteDoctorSchedules(doctor: ObjectId): Promise<object> {
         return this.scheduleModel.deleteMany({ doctor }).exec();
+    }
+
+    areSchedulesOverlapping(schedules: Array<ScheduleDto>): boolean {
+        // Remove empty schedules
+        const emptySchedule = schedules.find(
+            (schedule) => schedule.start === schedule.end
+        );
+        if (emptySchedule) return true;
+
+        // Should have at most 1 boundary schedule
+        const boundaries = schedules.filter(
+            (schedule) => schedule.start > schedule.end
+        );
+        if (boundaries.length > 1) return true;
+
+        // Make schedules ascending by start
+        schedules.sort((x, y) => {
+            return x.start < y.start ? -1 : 1;
+        });
+
+        let current = schedules[0];
+        for (let i = 1; i < schedules.length; i++) {
+            const schedule = schedules[i];
+            if (schedule.start < current.end) return true;
+            current = schedule;
+        }
+
+        if (boundaries.length > 0 && schedules[0].start < current.end)
+            return true;
+
+        return false;
     }
 }

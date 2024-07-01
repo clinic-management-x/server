@@ -5,17 +5,11 @@ import { Clinic } from "src/clinics/schemas/clinic.schema";
 
 @Schema()
 export class Schedule {
-    @Prop({ required: true, max: 6, min: 0 })
-    startDay: number;
+    @Prop({ required: true, max: 10080, min: 0 })
+    start: number;
 
-    @Prop({ required: true, max: 2400, min: 0 })
-    startTime: number;
-
-    @Prop({ required: true, max: 6, min: 0 })
-    endDay: number;
-
-    @Prop({ required: true, max: 2400, min: 0 })
-    endTime: number;
+    @Prop({ required: true, max: 10080, min: 0 })
+    end: number;
 
     @Prop({ required: true, type: SchemaTypes.ObjectId, ref: Clinic.name })
     clinic: Types.ObjectId;

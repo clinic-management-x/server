@@ -5,6 +5,7 @@ import {
     IsNotEmpty,
     IsNumber,
     IsString,
+    Max,
     Min,
     ValidateNested,
 } from "class-validator";
@@ -14,22 +15,14 @@ export class ScheduleDto {
     @IsNotEmpty()
     @IsNumber()
     @Min(0)
-    startDay: number;
+    @Max(10080)
+    start: number;
 
     @IsNotEmpty()
     @IsNumber()
     @Min(0)
-    startTime: number;
-
-    @IsNotEmpty()
-    @IsNumber()
-    @Min(0)
-    endDay: number;
-
-    @IsNotEmpty()
-    @IsNumber()
-    @Min(0)
-    endTime: number;
+    @Max(10080)
+    end: number;
 }
 
 export class CreateScheduleDto {
