@@ -120,6 +120,7 @@ export class FilesService {
             url: { $in: urls },
             clinic: clinicId,
         });
+
         if (files.length !== urls.length)
             throw new UnauthorizedException("Mismatch file URLs");
         return true;

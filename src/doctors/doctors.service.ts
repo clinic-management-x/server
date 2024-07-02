@@ -136,11 +136,12 @@ export class DoctorsService {
         dto: UpdateDoctorDetailsDto,
         clinic: ObjectId
     ): Promise<DoctorDocument> {
+        let speciality;
         const doctor = await this.doctorModel.findOne({ _id, clinic });
         if (!doctor) throw new NotFoundException("Doctor Not Found");
 
         if (dto.speciality) {
-            const speciality = await this.specialityModel.findOne({
+            speciality = await this.specialityModel.findOne({
                 _id: dto.speciality,
             });
             if (!speciality)
@@ -155,6 +156,7 @@ export class DoctorsService {
         Object.keys(dto).forEach((key) => {
             doctor[key] = dto[key];
         });
+        doctor.speciality = speciality;
         const updatedDoctor = await doctor.save();
 
         // Remove existing URL?
@@ -165,7 +167,10 @@ export class DoctorsService {
         ) {
             await this.filesService.deleteFiles([doctor.avatarUrl]);
         }
-
+        const presignedUrl = await this.filesService.createPresignedUrl(
+            doctor.avatarUrl
+        );
+        updatedDoctor.avatarUrl = presignedUrl;
         return updatedDoctor;
     }
 
