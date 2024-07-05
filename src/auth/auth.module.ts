@@ -26,7 +26,6 @@ import { ClinicsModule } from "src/clinics/clinics.module";
             useFactory: async (configService: ConfigService) => ({
                 global: true,
                 secret: configService.get<string>(JWT_SECRET),
-                signOptions: { expiresIn: "90d" },
             }),
         }),
     ],

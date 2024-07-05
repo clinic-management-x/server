@@ -4,6 +4,7 @@ import {
     HttpCode,
     HttpStatus,
     Post,
+    Request,
     SetMetadata,
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
@@ -11,6 +12,8 @@ import { SignInDto } from "./dto/sign-in.dto";
 import { IS_PUBLIC_ROUTE } from "src/shared/constants";
 import { User } from "src/users/schemas/user.schema";
 import { AdminRegisterDto } from "./dto/admin-register.dto";
+import { RefreshTokenDto } from "./dto/refresh-token.dto";
+import { UserRequest } from "src/shared/typings";
 
 @Controller("auth")
 export class AuthController {
@@ -34,5 +37,16 @@ export class AuthController {
             adminRegisterDto.email,
             adminRegisterDto.password
         );
+    }
+
+    @Post("refresh-token")
+    @SetMetadata(IS_PUBLIC_ROUTE, true)
+    refreshToken(@Body() { refreshToken }: RefreshTokenDto): Promise<object> {
+        return this.authService.refreshToken(refreshToken);
+    }
+
+    @Post("logout")
+    logout(@Request() request: UserRequest): Promise<object> {
+        return this.authService.logout(request.payload);
     }
 }
