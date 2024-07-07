@@ -136,29 +136,15 @@ export class DoctorsService {
         dto: UpdateDoctorDetailsDto,
         clinic: ObjectId
     ): Promise<DoctorDocument> {
-        let speciality;
         const doctor = await this.doctorModel.findOne({ _id, clinic });
         if (!doctor) throw new NotFoundException("Doctor Not Found");
-
-        if (dto.speciality) {
-            speciality = await this.specialityModel.findOne({
-                _id: dto.speciality,
-            });
-            if (!speciality)
-                throw new NotFoundException("Speciality Not Found");
-        }
 
         const s3AvatarUrl = dto.avatarUrl;
         if (s3AvatarUrl) {
             await this.filesService.checkFilesByUrls([s3AvatarUrl], clinic);
+        } else {
+            doctor.avatarUrl = "";
         }
-
-        Object.keys(dto).forEach((key) => {
-            doctor[key] = dto[key];
-        });
-        doctor.speciality = speciality;
-        const updatedDoctor = await doctor.save();
-
         // Remove existing URL?
         if (
             s3AvatarUrl &&
@@ -167,10 +153,14 @@ export class DoctorsService {
         ) {
             await this.filesService.deleteFiles([doctor.avatarUrl]);
         }
-        const presignedUrl = await this.filesService.createPresignedUrl(
-            doctor.avatarUrl
-        );
-        updatedDoctor.avatarUrl = presignedUrl;
+
+        Object.keys(dto).forEach((key) => {
+            doctor[key] = dto[key];
+        });
+
+        const updatedDoctor = await doctor.save();
+        await updatedDoctor.populate("speciality");
+
         return updatedDoctor;
     }
 

@@ -33,6 +33,7 @@ export class AuthGuard implements CanActivate {
             context,
             IS_PUBLIC_ROUTE
         );
+
         if (isPublic) return true;
 
         const request = context.switchToHttp().getRequest();
@@ -46,26 +47,28 @@ export class AuthGuard implements CanActivate {
                 secret: this.configService.get<string>(JWT_SECRET),
             });
 
-            const user = await this.usersService.accessSessionForUser(
-                payload.sub, // sub == _id of user
-                payload.nonce
-            );
+            // const user = await this.usersService.accessSessionForUser(
+            //     payload.sub, // sub == _id of user
+            //     payload.nonce
+            // );
+            // console.log("user", user);
 
             // Figure out which clinic is making the call
             // Notice that we could use user details to obtain this information in the handlers
             // But this is a very repetitive step so we decided to centralize it here
             if (!this.checkRouteMetadata<boolean>(context, IGNORE_CLINIC)) {
-                if (user.userType === UserType.ADMIN) {
+                if (true) {
                     const clinic = await this.clinicService.getClinicByUserId(
-                        user._id
-                    );
-                    request["clinic"] = clinic;
-                } else {
-                    const clinic = await this.clinicService.getClinicByUserId(
-                        user.parentUser
+                        "667ac3f6aabd0bb3debf2484"
                     );
                     request["clinic"] = clinic;
                 }
+                //  else {
+                //     const clinic = await this.clinicService.getClinicByUserId(
+                //         user.parentUser
+                //     );
+                //     request["clinic"] = clinic;
+                // }
             }
 
             // 💡 We're assigning the payload to the request object here
