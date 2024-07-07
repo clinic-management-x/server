@@ -18,6 +18,9 @@ class Session {
 
     @Prop({ required: true })
     lastAccessedAt: Date;
+
+    @Prop({ required: true })
+    lastRefreshedAt: Date;
 }
 
 @Schema({

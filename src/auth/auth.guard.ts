@@ -45,8 +45,8 @@ export class AuthGuard implements CanActivate {
             const payload = await this.jwtService.verifyAsync<Payload>(token, {
                 secret: this.configService.get<string>(JWT_SECRET),
             });
-            // I know it's not the true OAuth way but we won't worry about refresh tokens for now
-            const user = await this.usersService.updateSessionForUser(
+
+            const user = await this.usersService.accessSessionForUser(
                 payload.sub, // sub == _id of user
                 payload.nonce
             );
@@ -72,8 +72,8 @@ export class AuthGuard implements CanActivate {
             // so that we can access it in our route handlers
             request["payload"] = payload;
             request["token"] = token;
-        } catch {
-            throw new UnauthorizedException();
+        } catch (e) {
+            throw new UnauthorizedException(e); // e.name === TokenExpiredError if token expired
         }
 
         return true;
