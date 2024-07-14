@@ -139,11 +139,17 @@ export class DoctorsService {
         const doctor = await this.doctorModel.findOne({ _id, clinic });
         if (!doctor) throw new NotFoundException("Doctor Not Found");
 
+        if (dto.speciality) {
+            const speciality = await this.specialityModel.findOne({
+                _id: dto.speciality,
+            });
+            if (!speciality)
+                throw new NotFoundException("Speciality Not Found");
+        }
+
         const s3AvatarUrl = dto.avatarUrl;
         if (s3AvatarUrl) {
             await this.filesService.checkFilesByUrls([s3AvatarUrl], clinic);
-        } else {
-            doctor.avatarUrl = "";
         }
         // Remove existing URL?
         if (

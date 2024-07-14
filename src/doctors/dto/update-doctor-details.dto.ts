@@ -8,6 +8,7 @@ import {
     IsString,
     IsUrl,
     Min,
+    ValidateIf,
 } from "class-validator";
 import { IsObjectId } from "class-validator-mongo-object-id";
 import { Gender } from "src/shared/shared.enum";
@@ -46,6 +47,8 @@ export class UpdateDoctorDetailsDto {
     doctorFee?: number;
 
     @IsOptional()
+    @IsString()
+    @ValidateIf((e) => e === "")
     @IsUrl({})
     avatarUrl?: string;
 }
