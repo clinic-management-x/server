@@ -1,5 +1,12 @@
 import { Type } from "class-transformer";
-import { IsInt, IsOptional, Max, Min } from "class-validator";
+import {
+    IsInt,
+    IsOptional,
+    IsString,
+    Max,
+    MaxLength,
+    Min,
+} from "class-validator";
 
 export class GetStaffsDto {
     @IsOptional()
@@ -14,4 +21,9 @@ export class GetStaffsDto {
     @IsInt()
     @Min(0)
     skip?: number = 0;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(50)
+    search?: string;
 }

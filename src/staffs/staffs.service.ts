@@ -19,13 +19,20 @@ export class StaffsService {
         query: GetStaffsDto,
         clinicId: ObjectId
     ): Promise<ObjectList<StaffDocument>> {
+        const filter = {
+            ...(query.search
+                ? { name: { $regex: query.search, $options: "i" } }
+                : {}),
+
+            clinic: clinicId,
+        };
         const [data, count] = await Promise.all([
             this.staffModel
-                .find({ clinic: clinicId })
+                .find(filter)
                 .skip(query.skip)
                 .limit(query.limit)
                 .exec(),
-            this.staffModel.find({ clinic: clinicId }).countDocuments(),
+            this.staffModel.find(filter).countDocuments(),
         ]);
 
         await Promise.all(
@@ -45,6 +52,11 @@ export class StaffsService {
 
     async findStaff(_id: ObjectId, clinicId: ObjectId): Promise<StaffDocument> {
         const staff = await this.staffModel.findOne({ _id, clinic: clinicId });
+        if (staff.avatarUrl) {
+            staff.avatarUrl = await this.filesService.createPresignedUrl(
+                staff.avatarUrl
+            );
+        }
         if (!staff) throw new NotFoundException("Staff Not Found");
         return staff;
     }
