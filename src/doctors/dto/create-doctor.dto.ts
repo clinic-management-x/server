@@ -11,7 +11,6 @@ import {
     IsString,
     IsUrl,
     Min,
-    MinLength,
     ValidateNested,
 } from "class-validator";
 import { IsObjectId } from "class-validator-mongo-object-id";

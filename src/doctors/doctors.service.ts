@@ -151,12 +151,6 @@ export class DoctorsService {
         if (s3AvatarUrl) {
             await this.filesService.checkFilesByUrls([s3AvatarUrl], clinic);
         }
-
-        Object.keys(dto).forEach((key) => {
-            doctor[key] = dto[key];
-        });
-        const updatedDoctor = await doctor.save();
-
         // Remove existing URL?
         if (
             s3AvatarUrl &&
@@ -165,6 +159,13 @@ export class DoctorsService {
         ) {
             await this.filesService.deleteFiles([doctor.avatarUrl]);
         }
+
+        Object.keys(dto).forEach((key) => {
+            doctor[key] = dto[key];
+        });
+
+        const updatedDoctor = await doctor.save();
+        await updatedDoctor.populate("speciality");
 
         return updatedDoctor;
     }
