@@ -9,6 +9,7 @@ import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./users/users.module";
 import { MongooseConfigService } from "./mongoose-config.service";
 import { FilesModule } from "./files/files.module";
+import { StaffsModule } from "./staffs/staffs.module";
 
 @Module({
     imports: [
@@ -21,6 +22,7 @@ import { FilesModule } from "./files/files.module";
         AuthModule,
         UsersModule,
         FilesModule,
+        StaffsModule,
     ],
     controllers: [AppController],
     providers: [AppService],
