@@ -33,6 +33,7 @@ export class AuthGuard implements CanActivate {
             context,
             IS_PUBLIC_ROUTE
         );
+
         if (isPublic) return true;
 
         const request = context.switchToHttp().getRequest();
