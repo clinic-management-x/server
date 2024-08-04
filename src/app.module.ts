@@ -10,7 +10,6 @@ import { UsersModule } from "./users/users.module";
 import { MongooseConfigService } from "./mongoose-config.service";
 import { FilesModule } from "./files/files.module";
 import { StaffsModule } from "./staffs/staffs.module";
-import { SuppliersController } from "./suppliers/suppliers.controller";
 import { SuppliersModule } from "./suppliers/suppliers.module";
 
 @Module({
@@ -27,7 +26,7 @@ import { SuppliersModule } from "./suppliers/suppliers.module";
         StaffsModule,
         SuppliersModule,
     ],
-    controllers: [AppController, SuppliersController],
+    controllers: [AppController],
     providers: [AppService],
 })
 export class AppModule {}

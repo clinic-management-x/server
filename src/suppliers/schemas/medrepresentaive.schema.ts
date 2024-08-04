@@ -1,17 +1,12 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, SchemaTypes } from "mongoose";
+import { Supplier } from "./supplier.schema";
 import { Clinic } from "src/clinics/schemas/clinic.schema";
 
 @Schema()
-export class Supplier {
+export class MedicalRepresentative {
     @Prop({ required: true })
     name: string;
-
-    @Prop()
-    avatar?: string;
-
-    @Prop()
-    address?: string;
 
     @Prop({ required: true, unique: true })
     mobile: string;
@@ -20,11 +15,17 @@ export class Supplier {
     email?: string;
 
     @Prop()
-    contacts?: [{ name: string; value: string }];
+    contacts?: [{ name: string; data: string }];
+
+    @Prop({ type: SchemaTypes.ObjectId, ref: Supplier.name })
+    supplierCompany: Supplier;
 
     @Prop({ type: SchemaTypes.ObjectId, ref: Clinic.name })
     clinic: Clinic;
 }
 
-export const SupplierSchema = SchemaFactory.createForClass(Supplier);
-export type SupplierDocument = HydratedDocument<Supplier>;
+export const MedicalRepresentativeSchema = SchemaFactory.createForClass(
+    MedicalRepresentative
+);
+export type MedicalRepresentativeDocument =
+    HydratedDocument<MedicalRepresentative>;

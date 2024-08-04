@@ -1,19 +1,9 @@
-import {
-    IsEmail,
-    IsMobilePhone,
-    IsOptional,
-    IsString,
-    IsUrl,
-} from "class-validator";
+import { IsEmail, IsMobilePhone, IsOptional, IsString } from "class-validator";
 
-export class UpdateSupplierDto {
+export class UpdateMRDto {
     @IsOptional()
     @IsString()
     name?: string;
-
-    @IsOptional()
-    @IsUrl()
-    avatar?: string;
 
     @IsOptional()
     @IsMobilePhone()
