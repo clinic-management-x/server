@@ -11,6 +11,8 @@ import { MongooseConfigService } from "./mongoose-config.service";
 import { FilesModule } from "./files/files.module";
 import { StaffsModule } from "./staffs/staffs.module";
 import { SuppliersModule } from "./suppliers/suppliers.module";
+import { MedicinesModule } from "./medicines/medicines.module";
+import { OrdersModule } from "./orders/orders.module";
 
 @Module({
     imports: [
@@ -25,6 +27,8 @@ import { SuppliersModule } from "./suppliers/suppliers.module";
         FilesModule,
         StaffsModule,
         SuppliersModule,
+        MedicinesModule,
+        OrdersModule,
     ],
     controllers: [AppController],
     providers: [AppService],
