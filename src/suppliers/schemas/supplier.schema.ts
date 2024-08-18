@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { HydratedDocument, SchemaTypes } from "mongoose";
+import { HydratedDocument, SchemaTypes, Types } from "mongoose";
 import { Clinic } from "src/clinics/schemas/clinic.schema";
+import { MedicalRepresentative } from "./medrepresentaive.schema";
 
 @Schema()
 export class Supplier {
@@ -8,7 +9,7 @@ export class Supplier {
     name: string;
 
     @Prop()
-    avatar?: string;
+    avatarUrl?: string;
 
     @Prop()
     address?: string;
@@ -24,6 +25,12 @@ export class Supplier {
 
     @Prop({ type: SchemaTypes.ObjectId, ref: Clinic.name })
     clinic: Clinic;
+
+    @Prop({
+        type: [SchemaTypes.ObjectId],
+        ref: MedicalRepresentative.name,
+    })
+    medRepresentatives: Types.ObjectId[];
 }
 
 export const SupplierSchema = SchemaFactory.createForClass(Supplier);

@@ -8,7 +8,11 @@ import {
 } from "class-validator";
 import { IsObjectId } from "class-validator-mongo-object-id";
 
-class MedicalRepresentative {
+export class MedicalRepresentative {
+    @IsOptional()
+    @IsString()
+    _id?: string;
+
     @IsString()
     @IsNotEmpty()
     name: string;
@@ -33,7 +37,7 @@ class SupplierCompany {
 
     @IsString()
     @IsOptional()
-    avatar?: string;
+    avatarUrl?: string;
 
     @IsMobilePhone()
     @IsNotEmpty()

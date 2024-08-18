@@ -4,6 +4,7 @@ import {
     IsOptional,
     IsString,
     IsUrl,
+    ValidateIf,
 } from "class-validator";
 
 export class UpdateSupplierDto {
@@ -12,8 +13,10 @@ export class UpdateSupplierDto {
     name?: string;
 
     @IsOptional()
-    @IsUrl()
-    avatar?: string;
+    @IsString()
+    @ValidateIf((e) => e === "")
+    @IsUrl({})
+    avatarUrl?: string;
 
     @IsOptional()
     @IsMobilePhone()
@@ -22,6 +25,10 @@ export class UpdateSupplierDto {
     @IsOptional()
     @IsEmail()
     email?: string;
+
+    @IsOptional()
+    @IsString()
+    address?: string;
 
     @IsOptional()
     contacts?: { name: string; value: string }[];

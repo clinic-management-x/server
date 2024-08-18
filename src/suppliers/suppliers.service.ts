@@ -11,11 +11,7 @@ import {
 import { UpdateSupplierDto } from "./dto/update-supplier.dto";
 import { UpdateMRDto } from "./dto/update-mr.dto";
 import { FilesService } from "src/files/files.service";
-
-type SupplierType = {
-    supplier: SupplierDocument;
-    medRepresentatives?: MedicalRepresentativeDocument[];
-};
+import { GetSuppliersDto } from "./dto/get-suppliers.dto";
 
 @Injectable()
 export class SuppliersService {
@@ -26,74 +22,92 @@ export class SuppliersService {
         private filesService: FilesService
     ) {}
 
-    async getAll(clinicId: ObjectId): Promise<ObjectList<SupplierType>> {
-        const suppliers = await this.supplierModel
-            .find({ clinic: clinicId })
-            .exec();
+    async getAll(
+        query: GetSuppliersDto,
+        clinicId: ObjectId
+    ): Promise<ObjectList<object>> {
+        const filter = {
+            ...(query.search
+                ? { name: { $regex: query.search, $options: "i" } }
+                : {}),
 
-        const data = await Promise.all(
+            clinic: clinicId,
+        };
+
+        const suppliers = await Promise.all(
+            await this.supplierModel
+                .find(filter)
+                .skip(query.skip)
+                .limit(query.limit)
+                .populate("medRepresentatives")
+                .exec()
+        );
+
+        await Promise.all(
             suppliers.map(async (supplier) => {
-                const medRepresentatives = await this.MRModel.find({
-                    supplierCompany: supplier._id,
-                }).exec();
-
-                return {
-                    supplier: supplier,
-                    medRepresentatives,
-                };
+                if (supplier.avatarUrl) {
+                    const presignedUrl =
+                        await this.filesService.createPresignedUrl(
+                            supplier.avatarUrl
+                        );
+                    return (supplier.avatarUrl = presignedUrl);
+                }
             })
         );
 
-        return { data };
+        return { data: suppliers };
     }
 
-    async get(_id: ObjectId, clinicId: ObjectId): Promise<SupplierType> {
+    async get(_id: ObjectId, clinicId: ObjectId): Promise<object> {
         const supplier = await this.supplierModel
             .findOne({
                 _id,
                 clinic: clinicId,
             })
+            .populate("medRepresentatives")
             .exec();
+        if (supplier.avatarUrl) {
+            supplier.avatarUrl = await this.filesService.createPresignedUrl(
+                supplier.avatarUrl
+            );
+        }
         if (!supplier)
             throw new NotFoundException("Supplier Company Not Found.");
-        const medRepresentatives = await this.MRModel.find({
-            clinic: clinicId,
-            supplierCompany: supplier._id,
-        }).exec();
-        return { supplier, medRepresentatives };
+
+        return supplier;
     }
 
     async create(
         data: CreateSupplierDto,
         clinicId: ObjectId
     ): Promise<SupplierDocument> {
-        const s3AvatarUrl = data.company.avatar;
+        const s3AvatarUrl = data.company.avatarUrl;
         if (s3AvatarUrl) {
             await this.filesService.checkFilesByUrls([s3AvatarUrl], clinicId);
         }
+        let medRepresentatives;
 
-        const supplierCompany = await this.supplierModel.create({
-            ...data.company,
-            clinic: clinicId,
-        });
-
-        if (supplierCompany && data.representatives.length) {
-            this.MRModel.insertMany(
+        if (data.representatives.length) {
+            medRepresentatives = await this.MRModel.insertMany(
                 data.representatives.map((representative) => ({
                     ...representative,
-                    supplierCompany: supplierCompany._id,
                     clinic: clinicId,
                 }))
             );
         }
 
+        const supplierCompany = await this.supplierModel.create({
+            ...data.company,
+            clinic: clinicId,
+            medRepresentatives: medRepresentatives.length
+                ? medRepresentatives.map((data) => data._id)
+                : [],
+        });
+
         return supplierCompany;
     }
 
-    async createMR(
-        data: MRDto,
-        clinicId: ObjectId
-    ): Promise<MedicalRepresentativeDocument> {
+    async createMR(data: MRDto, clinicId: ObjectId): Promise<SupplierDocument> {
         const supplierCompany = await this.supplierModel
             .findOne({ _id: data._id, clinic: clinicId })
             .exec();
@@ -104,7 +118,18 @@ export class SuppliersService {
             clinic: clinicId,
             supplierCompany: supplierCompany._id,
         });
-        return representative;
+        const supplier = await this.supplierModel.findOne({ _id: data._id });
+
+        supplier.medRepresentatives = [
+            ...supplier.medRepresentatives,
+            representative._id,
+        ];
+
+        const updatedSupplier = (await supplier.save()).populate(
+            "medRepresentatives"
+        );
+
+        return updatedSupplier;
     }
 
     async updateSupplier(
@@ -114,27 +139,30 @@ export class SuppliersService {
     ): Promise<SupplierDocument> {
         const supplierCompany = await this.supplierModel
             .findOne({ _id, clinic: clinicId })
+            .populate("medRepresentatives")
             .exec();
         if (!supplierCompany)
             throw new NotFoundException("Supplier Company not found.");
 
-        const s3AvatarUrl = updateDto.avatar;
+        const s3AvatarUrl = updateDto.avatarUrl;
         if (s3AvatarUrl) {
             await this.filesService.checkFilesByUrls([s3AvatarUrl], clinicId);
         }
         // Remove existing URL?
         if (
             s3AvatarUrl &&
-            supplierCompany.avatar &&
-            s3AvatarUrl !== supplierCompany.avatar
+            supplierCompany.avatarUrl &&
+            s3AvatarUrl !== supplierCompany.avatarUrl
         ) {
-            await this.filesService.deleteFiles([supplierCompany.avatar]);
+            await this.filesService.deleteFiles([supplierCompany.avatarUrl]);
         }
 
         Object.keys(updateDto).map(
             (key) => (supplierCompany[key] = updateDto[key])
         );
-        const updatedSupplier = await supplierCompany.save();
+        const updatedSupplier = (await supplierCompany.save()).populate(
+            "medRepresentatives"
+        );
         return updatedSupplier;
     }
 
@@ -170,14 +198,28 @@ export class SuppliersService {
         return { deleteCount: 1 };
     }
 
-    async deleteMR(_id: ObjectId, clinicId: ObjectId): Promise<object> {
+    async deleteMR(
+        _id: ObjectId,
+        supplier_id: ObjectId,
+        clinicId: ObjectId
+    ): Promise<object> {
         const representative = await this.MRModel.findOne({
             _id,
             clinic: clinicId,
         });
         if (!representative)
-            throw new NotFoundException("Supplier Company not found.");
+            throw new NotFoundException("Medical Representative not found.");
+
+        const supplier = await this.supplierModel.findOne({ _id: supplier_id });
+
+        supplier.medRepresentatives = supplier.medRepresentatives.filter(
+            (mr_id) => mr_id.toString() !== _id
+        );
+
+        (await supplier.save()).populate("medRepresentatives");
+
         await this.MRModel.deleteOne({ _id, clinic: clinicId }).exec();
-        return { deleteCount: 1 };
+
+        return supplier;
     }
 }
