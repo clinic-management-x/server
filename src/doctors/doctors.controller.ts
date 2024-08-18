@@ -16,7 +16,7 @@ import { CreateDoctorDto } from "./dto/create-doctor.dto";
 import { SpecialityDocument } from "./schemas/speciality.schema";
 import { GetDoctorDto } from "./dto/get-doctor.dto";
 import { UpdateDoctorDetailsDto } from "./dto/update-doctor-details.dto";
-import { ClinicRequest, ObjectList } from "src/shared/typings";
+import { ClinicRequest } from "src/shared/typings";
 import { ScheduleDocument } from "./schemas/schedule.schema";
 import { CreateScheduleDto, ScheduleDto } from "./dto/create-schedule.dto";
 import { SchedulesService } from "./schedules.service";
@@ -33,7 +33,7 @@ export class DoctorsController {
     async getAll(
         @Query() query: GetDoctorsDto,
         @Request() request: ClinicRequest
-    ): Promise<ObjectList<DoctorDocument>> {
+    ) {
         return this.doctorsService.getAll(query, request.clinic._id);
     }
 

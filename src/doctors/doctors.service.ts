@@ -16,6 +16,11 @@ import { ClinicsService } from "src/clinics/clinics.service";
 import { ObjectList, ObjectId } from "src/shared/typings";
 import { FilesService } from "src/files/files.service";
 import { SchedulesService } from "./schedules.service";
+import { ScheduleDocument } from "./schemas/schedule.schema";
+
+type DoctorWithSchedules = DoctorDocument & {
+    schedules: ScheduleDocument[]; // Replace `any[]` with the appropriate type for schedules
+};
 
 @Injectable()
 export class DoctorsService {
@@ -32,7 +37,7 @@ export class DoctorsService {
     async getAll(
         query: GetDoctorsDto,
         clinic: ObjectId
-    ): Promise<ObjectList<DoctorDocument>> {
+    ): Promise<ObjectList<DoctorWithSchedules>> {
         const filter = {
             ...(query.search
                 ? { name: { $regex: query.search, $options: "i" } }
@@ -51,19 +56,24 @@ export class DoctorsService {
             this.doctorModel.find(filter).countDocuments(),
         ]);
 
-        await Promise.all(
+        const newData = (await Promise.all(
             data.map(async (doctor) => {
+                const schedules =
+                    await this.schedulesService.getDoctorSchedules(doctor._id);
+
                 if (doctor.avatarUrl) {
                     const presignedUrl =
                         await this.filesService.createPresignedUrl(
                             doctor.avatarUrl
                         );
-                    return (doctor.avatarUrl = presignedUrl);
-                }
-            })
-        );
 
-        return { data, count };
+                    doctor.avatarUrl = presignedUrl;
+                }
+                return { ...doctor.toObject(), schedules: schedules };
+            })
+        )) as DoctorWithSchedules[];
+
+        return { data: newData, count };
     }
 
     async get(_id: ObjectId, clinic: ObjectId): Promise<DoctorDocument> {
