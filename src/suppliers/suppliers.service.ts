@@ -208,7 +208,7 @@ export class SuppliersService {
             clinic: clinicId,
         });
         if (!representative)
-            throw new NotFoundException("Medical Representative not found.");
+            throw new NotFoundException("Medical representative not found.");
 
         const supplier = await this.supplierModel.findOne({ _id: supplier_id });
 
