@@ -2,7 +2,9 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, SchemaTypes } from "mongoose";
 import { Clinic } from "src/clinics/schemas/clinic.schema";
 
-@Schema()
+@Schema({
+    collection: "medical_representatives",
+})
 export class MedicalRepresentative {
     @Prop({ required: true })
     name: string;

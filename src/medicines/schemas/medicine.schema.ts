@@ -2,17 +2,19 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, SchemaTypes, Types } from "mongoose";
 import { RoutesOfAdministration } from "src/shared/shared.enum";
 import { BatchQrData } from "./qr.schema";
+import { GenericDrug } from "./generic-drug.schema";
+import { ActiveIngredientComponent } from "./active-ingredient.schema";
 
 @Schema()
 export class Medicine {
     @Prop({ required: true })
     brandName: string;
 
-    @Prop()
-    genericName: string;
+    @Prop({ type: SchemaTypes.ObjectId, ref: GenericDrug.name })
+    genericDrug: Types.ObjectId;
 
-    @Prop()
-    activeIngridients: [{ name: string; strength: number; unit: string }];
+    @Prop({ type: [ActiveIngredientComponent] })
+    activeIngridients: ActiveIngredientComponent[];
 
     @Prop({ required: true, enum: RoutesOfAdministration })
     routeOfAdministration: RoutesOfAdministration;
