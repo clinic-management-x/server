@@ -77,6 +77,13 @@ export class SuppliersService {
         return supplier;
     }
 
+    async getSupplierList(clinicId: ObjectId): Promise<object> {
+        const suppliers = await this.supplierModel
+            .find({ clinic: clinicId }, { _id: 1, name: 1 })
+            .exec();
+        return suppliers;
+    }
+
     async create(
         data: CreateSupplierDto,
         clinicId: ObjectId

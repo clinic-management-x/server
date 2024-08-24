@@ -1,6 +1,7 @@
 import { Type } from "class-transformer";
 import {
     IsInt,
+    IsNotEmpty,
     IsOptional,
     IsString,
     Max,
@@ -8,6 +9,11 @@ import {
     Min,
 } from "class-validator";
 
+export class GetBatchIdDto {
+    @IsNotEmpty()
+    @IsString()
+    batchId?: string;
+}
 export class GetOrdersDto {
     @IsOptional()
     @Type(() => Number)

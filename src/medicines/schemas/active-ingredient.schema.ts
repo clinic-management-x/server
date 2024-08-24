@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, SchemaTypes, Types } from "mongoose";
+import { UnitsOfMeasurements } from "src/shared/shared.enum";
 
 @Schema({
     collection: "active_ingredients",
@@ -23,7 +24,7 @@ export class ActiveIngredientComponent {
     @Prop()
     strength: number;
 
-    @Prop()
+    @Prop({ isRequired: true, enum: UnitsOfMeasurements })
     unit: string;
 }
 

@@ -49,6 +49,8 @@ export enum BuySellUnits {
     BOX = "BOX",
     BOTTLE = "BOTTLE",
     UNIT = "UNIT",
+    TABLET = "TABLET",
+    CARD = "CARD",
 }
 
 export enum PaymentMethods {

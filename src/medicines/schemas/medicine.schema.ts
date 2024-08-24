@@ -1,9 +1,10 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, SchemaTypes, Types } from "mongoose";
-import { RoutesOfAdministration } from "src/shared/shared.enum";
+import { BuySellUnits, RoutesOfAdministration } from "src/shared/shared.enum";
 import { BatchQrData } from "./qr.schema";
 import { GenericDrug } from "./generic-drug.schema";
 import { ActiveIngredientComponent } from "./active-ingredient.schema";
+import { Clinic } from "src/clinics/schemas/clinic.schema";
 
 @Schema()
 export class Medicine {
@@ -13,17 +14,26 @@ export class Medicine {
     @Prop({ type: SchemaTypes.ObjectId, ref: GenericDrug.name })
     genericDrug: Types.ObjectId;
 
-    @Prop({ type: [ActiveIngredientComponent] })
-    activeIngridients: ActiveIngredientComponent[];
+    @Prop({
+        type: [SchemaTypes.ObjectId],
+        ref: ActiveIngredientComponent.name,
+    })
+    activeIngredients: Types.ObjectId[];
 
     @Prop({ required: true, enum: RoutesOfAdministration })
     routeOfAdministration: RoutesOfAdministration;
 
     @Prop({ default: 0 })
-    stockQuantiy: number;
+    stockQuantity: number;
 
-    @Prop()
+    @Prop({ required: true, enum: BuySellUnits })
+    stockQuantityUnit: string;
+
+    @Prop({ required: true })
     miniumAlertQuantity: number;
+
+    @Prop({ required: true, enum: BuySellUnits })
+    minimumAlertQuantityUnit: string;
 
     @Prop()
     sellPrices: [{ unit: string; price: number }];
@@ -32,11 +42,13 @@ export class Medicine {
     imageUrls: string[];
 
     @Prop({
-        required: true,
         type: [SchemaTypes.ObjectId],
         ref: BatchQrData.name,
     })
     batchQrData: Types.ObjectId[];
+
+    @Prop({ type: SchemaTypes.ObjectId, ref: Clinic.name })
+    clinic: Clinic;
 }
 
 export const MedicineSchema = SchemaFactory.createForClass(Medicine);

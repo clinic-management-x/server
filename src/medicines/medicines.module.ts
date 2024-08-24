@@ -10,6 +10,7 @@ import { GenericDrug, GenericDrugSchema } from "./schemas/generic-drug.schema";
 import { Medicine, MedicineSchema } from "./schemas/medicine.schema";
 import { MedicinesController } from "./medicines.controller";
 import { MedicinesService } from "./medicines.service";
+import { FilesModule } from "src/files/files.module";
 
 @Module({
     imports: [
@@ -22,6 +23,7 @@ import { MedicinesService } from "./medicines.service";
             { name: GenericDrug.name, schema: GenericDrugSchema },
             { name: Medicine.name, schema: MedicineSchema },
         ]),
+        FilesModule,
     ],
     controllers: [MedicinesController],
     providers: [MedicinesService],
