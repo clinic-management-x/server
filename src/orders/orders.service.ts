@@ -83,6 +83,12 @@ export class OrdersService {
             return false;
         }
     }
+    async getBatchIdList(clinicId: ObjectId): Promise<object> {
+        const batchIds = await this.orderModel
+            .find({ clinic: clinicId }, { _id: 1, batchId: 1 })
+            .exec();
+        return batchIds;
+    }
 
     async createOrder(
         createOrderDto: CreateOrderDto,

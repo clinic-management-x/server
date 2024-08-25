@@ -25,10 +25,15 @@ import {
     UpdateMedicineDto,
 } from "./dto/update-medicine.dto";
 import { DeleteIngredientDto } from "./dto/delete-ingredeint.dto";
+import { CreateBarcodeDto } from "./dto/barcode-dto";
+import { BarCodeService } from "./barcode.service";
 
 @Controller("medicines")
 export class MedicinesController {
-    constructor(private medicinesService: MedicinesService) {}
+    constructor(
+        private medicinesService: MedicinesService,
+        private qrCodeService: BarCodeService
+    ) {}
 
     @Get("generic-drugs")
     async getAllGenericDrugs(@Query() query: GetDrugInfoDto) {
@@ -71,6 +76,17 @@ export class MedicinesController {
         );
     }
 
+    @Post("/barcode")
+    async createBarcode(
+        @Body() createBarcodeDto: CreateBarcodeDto[],
+        @Request() request: ClinicRequest
+    ) {
+        return this.qrCodeService.createBarCodes(
+            createBarcodeDto,
+            request.clinic._id
+        );
+    }
+
     @Patch(":_id")
     async updateMedicine(
         @Param() { _id }: GetMedicineDto,
@@ -82,6 +98,13 @@ export class MedicinesController {
             updateMedicineDto,
             request.clinic._id
         );
+    }
+    @Delete(":_id")
+    async deleteMedicine(
+        @Param() { _id }: GetMedicineDto,
+        @Request() request: ClinicRequest
+    ) {
+        return this.medicinesService.deleteMedicine(_id, request.clinic._id);
     }
 
     @Put("/active-ingredient-component/:_id")
@@ -105,25 +128,16 @@ export class MedicinesController {
         return this.medicinesService.updateActiveIngredientComponent(_id, dto);
     }
 
-    @Delete(":_id")
-    async deleteMedicine(
+    @Delete("/active-ingredient-component/:_id")
+    async deleteActiveIngredientComponent(
         @Param() { _id }: GetMedicineDto,
+        @Query() { medicineId }: DeleteIngredientDto,
         @Request() request: ClinicRequest
     ) {
-        return this.medicinesService.deleteMedicine(_id, request.clinic._id);
+        return this.medicinesService.deleteActiveIngredientComponent(
+            _id,
+            medicineId,
+            request.clinic._id
+        );
     }
-
-    // @Delete("/active-ingredient-component/:_id")
-    // async deleteActiveIngredientComponent(
-    //     @Param() { _id }: GetMedicineDto,
-    //     @Query() { medicineId }: DeleteIngredientDto,
-    //     @Request() request: ClinicRequest
-    // ) {
-    //     console.log("req", _id, request);
-    //     return this.deleteActiveIngredientComponent(
-    //         _id,
-    //         medicineId,
-    //         request.clinic._id
-    //     );
-    // }
 }

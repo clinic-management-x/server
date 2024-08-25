@@ -1,7 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, SchemaTypes, Types } from "mongoose";
 import { BuySellUnits, RoutesOfAdministration } from "src/shared/shared.enum";
-import { BatchQrData } from "./qr.schema";
 import { GenericDrug } from "./generic-drug.schema";
 import { ActiveIngredientComponent } from "./active-ingredient.schema";
 import { Clinic } from "src/clinics/schemas/clinic.schema";
@@ -40,12 +39,6 @@ export class Medicine {
 
     @Prop()
     imageUrls: string[];
-
-    @Prop({
-        type: [SchemaTypes.ObjectId],
-        ref: BatchQrData.name,
-    })
-    batchQrData: Types.ObjectId[];
 
     @Prop({ type: SchemaTypes.ObjectId, ref: Clinic.name })
     clinic: Clinic;

@@ -34,6 +34,11 @@ export class OrdersController {
     ) {
         return this.orderService.searchBatchId(batchId, request.clinic._id);
     }
+    @Get("/list")
+    async getBatchIdList(@Request() request: ClinicRequest) {
+        console.log(">>><<<<");
+        return this.orderService.getBatchIdList(request.clinic._id);
+    }
 
     @Get(":_id")
     async get(
