@@ -30,6 +30,10 @@ export class SuppliersController {
     ) {
         return this.supplierService.getAll(query, request.clinic._id);
     }
+    @Get("/list")
+    async getSupplierList(@Request() request: ClinicRequest) {
+        return this.supplierService.getSupplierList(request.clinic._id);
+    }
 
     @Get(":_id")
     async get(

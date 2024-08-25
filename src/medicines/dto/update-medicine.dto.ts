@@ -5,7 +5,12 @@ import {
     IsOptional,
     IsString,
 } from "class-validator";
-import { RoutesOfAdministration } from "src/shared/shared.enum";
+import { IsObjectId } from "class-validator-mongo-object-id";
+import {
+    BuySellUnits,
+    RoutesOfAdministration,
+    UnitsOfMeasurements,
+} from "src/shared/shared.enum";
 
 export class UpdateMedicineDto {
     @IsOptional()
@@ -13,12 +18,9 @@ export class UpdateMedicineDto {
     brandName?: string;
 
     @IsOptional()
+    @IsObjectId()
     @IsString()
     genericName?: string;
-
-    @IsOptional()
-    @IsArray()
-    activeIngridients?: [{ name: string; strength: number; unit: string }];
 
     @IsOptional()
     @IsString()
@@ -30,8 +32,16 @@ export class UpdateMedicineDto {
     stockQuantiy?: number;
 
     @IsOptional()
+    @IsEnum(BuySellUnits)
+    stockQuantityUnit?: string;
+
+    @IsOptional()
     @IsNumber()
     miniumAlertQuantity?: number;
+
+    @IsOptional()
+    @IsEnum(BuySellUnits)
+    minimumAlertQuantityUnit?: string;
 
     @IsOptional()
     @IsArray()
@@ -40,4 +50,15 @@ export class UpdateMedicineDto {
     @IsOptional()
     @IsArray()
     imageUrls?: string[];
+}
+
+export class UpdateActiveIngredientDto {
+    @IsOptional()
+    @IsNumber()
+    strength?: number;
+
+    @IsOptional()
+    @IsEnum(UnitsOfMeasurements)
+    @IsString()
+    unit?: string;
 }

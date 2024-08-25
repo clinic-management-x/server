@@ -17,6 +17,7 @@ import {
 
 export class OrderItemDto {
     @IsNotEmpty()
+    @IsObjectId({ message: "Not a valid object id" })
     @IsString()
     itemName: string;
 
@@ -45,7 +46,7 @@ export class CreateOrderDto {
     @IsNotEmpty()
     @IsString()
     @IsObjectId({ message: "Not a valid object id" })
-    supplierId: string;
+    supplier: string;
 
     @IsNotEmpty()
     @IsArray()

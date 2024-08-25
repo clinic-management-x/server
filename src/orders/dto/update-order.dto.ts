@@ -4,10 +4,10 @@ import { OrderStatus } from "src/shared/shared.enum";
 export class UpdateOrderDto {
     @IsOptional()
     @IsString()
-    batchId: string;
+    batchId?: string;
 
     @IsOptional()
     @IsString()
     @IsEnum(OrderStatus)
-    orderStatus: string;
+    orderStatus?: string;
 }

@@ -3,6 +3,7 @@ import { HydratedDocument, SchemaTypes, Types } from "mongoose";
 import { OrderStatus, PaymentMethods } from "src/shared/shared.enum";
 import { OrderItem } from "./orderItemSchema";
 import { Supplier } from "src/suppliers/schemas/supplier.schema";
+import { Clinic } from "src/clinics/schemas/clinic.schema";
 
 @Schema()
 export class Order {
@@ -16,7 +17,7 @@ export class Order {
     estimateDate?: Date;
 
     @Prop({ type: SchemaTypes.ObjectId, ref: Supplier.name })
-    supplierId: Types.ObjectId;
+    supplier: Types.ObjectId;
 
     @Prop({ type: [SchemaTypes.ObjectId], ref: OrderItem.name })
     orderItems: Types.ObjectId[];
@@ -26,6 +27,9 @@ export class Order {
 
     @Prop({ default: false })
     hasAlreadyArrived: boolean;
+
+    @Prop({ type: SchemaTypes.ObjectId, ref: Clinic.name })
+    clinic: Clinic;
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order);
