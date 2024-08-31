@@ -14,7 +14,7 @@ import { MedicinesService } from "./medicines.service";
 
 import { GetDrugInfoDto } from "src/shared/dto/get-drug-info.dto";
 import {
-    ActiveIngredientDto,
+    ActiveIngredientCreateDto,
     CreateMedicineDto,
 } from "./dto/create-medicine.dto";
 import { ClinicRequest } from "src/shared/typings";
@@ -39,7 +39,7 @@ export class MedicinesController {
     async getAllGenericDrugs(@Query() query: GetDrugInfoDto) {
         return this.medicinesService.getAllGenericDrugs(query);
     }
-    @Get("active-ingridients")
+    @Get("active-ingredients")
     async getAllActiveIngrideints(@Query() query: GetDrugInfoDto) {
         return this.medicinesService.getAllActiveIngridients(query);
     }
@@ -110,7 +110,7 @@ export class MedicinesController {
     @Put("/active-ingredient-component/:_id")
     async createActiveIngredientComponent(
         @Param() { _id }: GetMedicineDto,
-        @Body() dto: ActiveIngredientDto,
+        @Body() dto: ActiveIngredientCreateDto,
         @Request() request: ClinicRequest
     ) {
         return this.medicinesService.createActiveIngredientComponent(

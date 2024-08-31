@@ -17,7 +17,7 @@ import {
     ActiveIngredientDocument,
 } from "./schemas/active-ingredient.schema";
 import {
-    ActiveIngredientDto,
+    ActiveIngredientCreateDto,
     CreateMedicineDto,
 } from "./dto/create-medicine.dto";
 import { ObjectId } from "src/shared/typings";
@@ -113,9 +113,10 @@ export class MedicinesService {
         await Promise.all(
             data.map(async (medicine) => {
                 if (medicine.imageUrls) {
-                    medicine.imageUrls = await this.genereatePresignedUrls(
+                    const urls = await this.genereatePresignedUrls(
                         medicine.imageUrls
                     );
+                    medicine.imageUrls = urls.map((urldata) => urldata.preview);
                 }
             })
         );
@@ -136,24 +137,34 @@ export class MedicinesService {
     async getMedicine(
         _id: ObjectId,
         clinicId: ObjectId
-    ): Promise<MedicineDocument> {
+    ): Promise<{
+        medicine: MedicineDocument;
+        imageArray: { preview: string; actual: string }[];
+    }> {
         const medicine = await this.medicineModel
             .findOne({ _id: _id, clinic: clinicId })
             .populate(populateQuery)
             .exec();
+        let imageArray = [];
         if (!medicine) throw new NotFoundException("Medicine Not Found.");
         if (medicine.imageUrls) {
-            medicine.imageUrls = await this.genereatePresignedUrls(
-                medicine.imageUrls
-            );
+            const urls = await this.genereatePresignedUrls(medicine.imageUrls);
+            medicine.imageUrls = urls.map((urldata) => urldata.preview);
+            imageArray = urls;
         }
-        return medicine;
+
+        return { medicine, imageArray };
     }
 
-    async genereatePresignedUrls(urls: string[]): Promise<string[]> {
-        const presignedUrls = urls.map((image) =>
-            this.filesService.createPresignedUrl(image)
-        );
+    async genereatePresignedUrls(
+        urls: string[]
+    ): Promise<{ preview: string; actual: string }[]> {
+        const presignedUrls = urls.map(async (image) => {
+            return {
+                preview: await this.filesService.createPresignedUrl(image),
+                actual: image,
+            };
+        });
         return await Promise.all(presignedUrls);
     }
 
@@ -163,7 +174,13 @@ export class MedicinesService {
     ): Promise<MedicineDocument> {
         const activeIngredients =
             await this.activeIngredientComponentModel.insertMany(
-                createMedicineDto.activeIngredients
+                createMedicineDto.activeIngredients.map((ingredient) => {
+                    return {
+                        activeIngredient: ingredient._id,
+                        unit: ingredient.unit,
+                        strength: ingredient.strength,
+                    };
+                })
             );
 
         const data = {
@@ -190,16 +207,25 @@ export class MedicinesService {
         if (!medicineToUpdate)
             throw new NotFoundException("Medicine Not Found.");
 
-        //TO-DO
-        //fix for url array
-        // const s3AvatarUrls = updateMedicineDto.imageUrls;
-        // if (s3AvatarUrls.length) {
-        //     await this.filesService.checkFilesByUrls(s3AvatarUrls, clinicId);
-        // }
+        if (updateMedicineDto.imageUrls) {
+            const s3AvatarUrls = updateMedicineDto.imageUrls.map(
+                (urldata) => urldata.actual
+            );
+            if (s3AvatarUrls.length) {
+                await this.filesService.checkFilesByUrls(
+                    s3AvatarUrls,
+                    clinicId
+                );
+            }
 
-        Object.keys(updateMedicineDto).map((key) => {
-            medicineToUpdate[key] = updateMedicineDto[key];
-        });
+            medicineToUpdate.imageUrls = updateMedicineDto.imageUrls.map(
+                (urldata) => urldata.actual
+            );
+        } else {
+            Object.keys(updateMedicineDto).map((key) => {
+                medicineToUpdate[key] = updateMedicineDto[key];
+            });
+        }
 
         await medicineToUpdate.save();
 
@@ -226,7 +252,7 @@ export class MedicinesService {
 
     async createActiveIngredientComponent(
         medicineId: ObjectId,
-        dto: ActiveIngredientDto,
+        dto: ActiveIngredientCreateDto,
         clinicId: ObjectId
     ): Promise<MedicineDocument> {
         const medicine = await this.medicineModel
@@ -234,7 +260,9 @@ export class MedicinesService {
                 _id: medicineId,
                 clinic: clinicId,
             })
-            .populate(populateQuery);
+            .populate(populateQuery)
+            .exec();
+
         if (!medicine) throw new NotFoundException("Medicine Not Found.");
 
         if (

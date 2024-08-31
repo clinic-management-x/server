@@ -29,7 +29,7 @@ export class Medicine {
     stockQuantityUnit: string;
 
     @Prop({ required: true })
-    miniumAlertQuantity: number;
+    minimumAlertQuantity: number;
 
     @Prop({ required: true, enum: BuySellUnits })
     minimumAlertQuantityUnit: string;
