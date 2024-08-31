@@ -34,6 +34,25 @@ export class ActiveIngredientDto {
     @IsNotEmpty()
     @IsObjectId({ message: "Not a valid object id" })
     @IsString()
+    _id: string;
+
+    @IsNotEmpty()
+    @IsString()
+    activeIngredient: string;
+
+    @IsNotEmpty()
+    @IsNumber()
+    strength: number;
+
+    @IsNotEmpty()
+    @IsEnum(UnitsOfMeasurements)
+    @IsString()
+    unit: string;
+}
+export class ActiveIngredientCreateDto {
+    @IsNotEmpty()
+    @IsObjectId({ message: "Not a valid object id" })
+    @IsString()
     activeIngredient: string;
 
     @IsNotEmpty()
@@ -75,7 +94,7 @@ export class CreateMedicineDto {
 
     @IsNotEmpty()
     @IsNumber()
-    miniumAlertQuantity: number;
+    minimumAlertQuantity: number;
 
     @IsNotEmpty()
     @IsEnum(BuySellUnits)

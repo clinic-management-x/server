@@ -14,6 +14,7 @@ export enum FilePurpose {
     PATIENT_EMR = "PATIENT_EMR",
     SUPPLIER_AVATAR = "SUPPLIER_AVATAR",
     STAFF_AVATAR = "STAFF_AVATAR",
+    DRUG_AVATAR = "DRUG_AVATAR",
 }
 
 export enum RoutesOfAdministration {

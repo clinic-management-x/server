@@ -29,7 +29,7 @@ export class UpdateMedicineDto {
 
     @IsOptional()
     @IsNumber()
-    stockQuantiy?: number;
+    stockQuantity?: number;
 
     @IsOptional()
     @IsEnum(BuySellUnits)
@@ -37,7 +37,7 @@ export class UpdateMedicineDto {
 
     @IsOptional()
     @IsNumber()
-    miniumAlertQuantity?: number;
+    minimumAlertQuantity?: number;
 
     @IsOptional()
     @IsEnum(BuySellUnits)
@@ -49,7 +49,7 @@ export class UpdateMedicineDto {
 
     @IsOptional()
     @IsArray()
-    imageUrls?: string[];
+    imageUrls?: { actual: string; preview: string }[];
 }
 
 export class UpdateActiveIngredientDto {
