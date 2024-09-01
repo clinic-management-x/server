@@ -53,8 +53,14 @@ export class MedicinesController {
     }
 
     @Get("/list")
-    async getMedicinesList(@Request() request: ClinicRequest) {
-        return this.medicinesService.getMedicinesList(request.clinic._id);
+    async getMedicinesList(
+        @Query() query: GetDrugInfoDto,
+        @Request() request: ClinicRequest
+    ) {
+        return this.medicinesService.getMedicinesList(
+            query,
+            request.clinic._id
+        );
     }
 
     @Get(":_id")

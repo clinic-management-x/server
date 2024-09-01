@@ -7,7 +7,7 @@ import { Clinic } from "src/clinics/schemas/clinic.schema";
 
 @Schema()
 export class Order {
-    @Prop({ required: true, unique: true })
+    @Prop({ required: true })
     batchId: string;
 
     @Prop({ required: true, enum: PaymentMethods })
