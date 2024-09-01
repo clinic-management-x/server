@@ -127,9 +127,22 @@ export class MedicinesService {
         };
     }
 
-    async getMedicinesList(clinicId: ObjectId): Promise<object> {
+    async getMedicinesList(
+        query: GetDrugInfoDto,
+        clinicId: ObjectId
+    ): Promise<object> {
+        const { search } = query;
+        const filter = {
+            brandName: {
+                $regex: search,
+                $options: "i",
+            },
+            clinic: clinicId,
+        };
+
         const suppliers = await this.medicineModel
-            .find({ clinic: clinicId }, { _id: 1, brandName: 1 })
+            .find(filter)
+            .select(["_id", "brandName"])
             .exec();
         return suppliers;
     }

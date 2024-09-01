@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+    BadRequestException,
+    Injectable,
+    NotFoundException,
+} from "@nestjs/common";
 import { CreateOrderDto } from "./dto/create-order.dto";
 import { ObjectId, ObjectList } from "src/shared/typings";
 import { InjectModel } from "@nestjs/mongoose";
@@ -94,6 +98,13 @@ export class OrdersService {
         createOrderDto: CreateOrderDto,
         clinicId: ObjectId
     ): Promise<OrderDocument> {
+        const alreadyExistingBatchId = await this.orderModel.findOne({
+            batchId: createOrderDto.batchId,
+            clinic: clinicId,
+        });
+        if (alreadyExistingBatchId)
+            throw new BadRequestException("BatchId must be unique.");
+
         const orderItems = await this.orderItemModel.insertMany(
             createOrderDto.orderItems
         );

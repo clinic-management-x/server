@@ -27,16 +27,8 @@ export class OrdersController {
         return this.orderService.getAllOrders(query, request.clinic._id);
     }
 
-    @Get("/search")
-    async searchBatchId(
-        @Query() { batchId }: GetBatchIdDto,
-        @Request() request: ClinicRequest
-    ) {
-        return this.orderService.searchBatchId(batchId, request.clinic._id);
-    }
     @Get("/list")
     async getBatchIdList(@Request() request: ClinicRequest) {
-        console.log(">>><<<<");
         return this.orderService.getBatchIdList(request.clinic._id);
     }
 
@@ -57,6 +49,14 @@ export class OrdersController {
             createOrderDto,
             request.clinic._id
         );
+    }
+
+    @Post("/search")
+    async searchBatchId(
+        @Body() { batchId }: GetBatchIdDto,
+        @Request() request: ClinicRequest
+    ) {
+        return this.orderService.searchBatchId(batchId, request.clinic._id);
     }
 
     @Patch(":_id")
