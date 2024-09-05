@@ -1,5 +1,6 @@
 import { Type } from "class-transformer";
 import {
+    IsBoolean,
     IsInt,
     IsNotEmpty,
     IsOptional,
@@ -8,11 +9,21 @@ import {
     MaxLength,
     Min,
 } from "class-validator";
+import { IsObjectId } from "class-validator-mongo-object-id";
 
 export class GetBatchIdDto {
     @IsNotEmpty()
     @IsString()
     batchId?: string;
+
+    @IsOptional()
+    @IsBoolean()
+    isEdit?: boolean;
+
+    @IsOptional()
+    @IsString()
+    @IsObjectId()
+    _id?: string;
 }
 export class GetOrdersDto {
     @IsOptional()

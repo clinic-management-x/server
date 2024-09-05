@@ -1,19 +1,22 @@
 import {
     Body,
     Controller,
+    Delete,
     Get,
     Param,
     Patch,
     Post,
+    Put,
     Query,
     Request,
 } from "@nestjs/common";
 import { OrdersService } from "./orders.service";
-import { CreateOrderDto } from "./dto/create-order.dto";
+import { CreateOrderDto, OrderItemDto } from "./dto/create-order.dto";
 import { ClinicRequest } from "src/shared/typings";
 import { GetBatchIdDto, GetOrdersDto } from "./dto/get-orders.dto";
-import { GetOrderDto } from "./dto/get-order.dto";
+import { GetOrderDto, OrderIdDto } from "./dto/get-order.dto";
 import { UpdateOrderDto } from "./dto/update-order.dto";
+import { UpdateOrderItemDto } from "./dto/update-order-item.dto";
 
 @Controller("orders")
 export class OrdersController {
@@ -53,10 +56,22 @@ export class OrdersController {
 
     @Post("/search")
     async searchBatchId(
-        @Body() { batchId }: GetBatchIdDto,
+        @Body() dto: GetBatchIdDto,
         @Request() request: ClinicRequest
     ) {
-        return this.orderService.searchBatchId(batchId, request.clinic._id);
+        return this.orderService.searchBatchId(dto, request.clinic._id);
+    }
+    @Put("/order-item/:_id")
+    async createOrderItem(
+        @Param() params: GetOrderDto,
+        @Body() orderItemDto: OrderItemDto,
+        @Request() request: ClinicRequest
+    ) {
+        return this.orderService.createOrderItem(
+            params._id,
+            orderItemDto,
+            request.clinic._id
+        );
     }
 
     @Patch(":_id")
@@ -70,5 +85,40 @@ export class OrdersController {
             updateOrderDto,
             request.clinic._id
         );
+    }
+
+    @Patch("/order-item/:_id")
+    async updateOrderItem(
+        @Param() { _id }: GetOrderDto,
+        @Body() updateOrderItemDto: UpdateOrderItemDto,
+        @Request() request: ClinicRequest
+    ) {
+        return this.orderService.updateOrderItem(
+            _id,
+            updateOrderItemDto,
+            request.clinic._id
+        );
+    }
+
+    @Delete("/order-item/:_id")
+    async deleteOrderItem(
+        @Param() params: GetOrderDto,
+        @Query() query: OrderIdDto,
+        @Request() request: ClinicRequest
+    ) {
+        return this.orderService.deleteOrderItem(
+            params._id,
+            query.id,
+            request.clinic._id
+        );
+    }
+
+    @Delete("/:_id")
+    async deleteOrder(
+        @Param() params: GetOrderDto,
+
+        @Request() request: ClinicRequest
+    ) {
+        return this.orderService.deleteOrder(params._id, request.clinic._id);
     }
 }
