@@ -7,3 +7,10 @@ export class GetOrderDto {
     @IsString()
     _id: string;
 }
+
+export class OrderIdDto {
+    @IsNotEmpty()
+    @IsObjectId()
+    @IsString()
+    id: string;
+}
