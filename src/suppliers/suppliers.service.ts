@@ -3,7 +3,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Supplier, SupplierDocument } from "./schemas/supplier.schema";
 import { Model } from "mongoose";
 import { CreateSupplierDto, MRDto } from "./dto/create-supplier.dto";
-import { ObjectId, ObjectList } from "src/shared/typings";
+import { ObjectId } from "src/shared/typings";
 import {
     MedicalRepresentative,
     MedicalRepresentativeDocument,
@@ -22,10 +22,7 @@ export class SuppliersService {
         private filesService: FilesService
     ) {}
 
-    async getAll(
-        query: GetSuppliersDto,
-        clinicId: ObjectId
-    ): Promise<ObjectList<object>> {
+    async getAll(query: GetSuppliersDto, clinicId: ObjectId): Promise<object> {
         const filter = {
             ...(query.search
                 ? { name: { $regex: query.search, $options: "i" } }
@@ -34,17 +31,18 @@ export class SuppliersService {
             clinic: clinicId,
         };
 
-        const suppliers = await Promise.all(
-            await this.supplierModel
+        const [data, count] = await Promise.all([
+            this.supplierModel
                 .find(filter)
                 .skip(query.skip)
                 .limit(query.limit)
                 .populate("medRepresentatives")
-                .exec()
-        );
+                .exec(),
+            this.supplierModel.find(filter).countDocuments(),
+        ]);
 
         await Promise.all(
-            suppliers.map(async (supplier) => {
+            data.map(async (supplier) => {
                 if (supplier.avatarUrl) {
                     const presignedUrl =
                         await this.filesService.createPresignedUrl(
@@ -55,7 +53,7 @@ export class SuppliersService {
             })
         );
 
-        return { data: suppliers };
+        return { data, count };
     }
 
     async get(_id: ObjectId, clinicId: ObjectId): Promise<object> {
@@ -92,9 +90,9 @@ export class SuppliersService {
         if (s3AvatarUrl) {
             await this.filesService.checkFilesByUrls([s3AvatarUrl], clinicId);
         }
-        let medRepresentatives;
+        let medRepresentatives = [];
 
-        if (data.representatives.length) {
+        if (data?.representatives?.length) {
             medRepresentatives = await this.MRModel.insertMany(
                 data.representatives.map((representative) => ({
                     ...representative,
@@ -106,7 +104,7 @@ export class SuppliersService {
         const supplierCompany = await this.supplierModel.create({
             ...data.company,
             clinic: clinicId,
-            medRepresentatives: medRepresentatives.length
+            medRepresentatives: medRepresentatives?.length
                 ? medRepresentatives.map((data) => data._id)
                 : [],
         });
