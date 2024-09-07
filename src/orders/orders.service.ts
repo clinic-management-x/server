@@ -43,7 +43,7 @@ export class OrdersService {
     ): Promise<ObjectList<object>> {
         const filter = {
             ...(query.search
-                ? { brandName: { $regex: query.search, $options: "i" } }
+                ? { batchId: { $regex: query.search, $options: "i" } }
                 : {}),
 
             clinic: clinicId,
