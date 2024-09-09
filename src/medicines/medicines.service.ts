@@ -142,7 +142,7 @@ export class MedicinesService {
 
         const suppliers = await this.medicineModel
             .find(filter)
-            .select(["_id", "brandName"])
+            .select(["_id", "brandName", "stockQuantityUnit"])
             .exec();
         return suppliers;
     }

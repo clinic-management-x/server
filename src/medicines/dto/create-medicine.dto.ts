@@ -104,6 +104,11 @@ export class CreateMedicineDto {
     @IsArray()
     sellPrices: [{ unit: string; price: number }];
 
+    @IsArray()
+    quantityRelations: [
+        { lowerUnit: string; upperUnit: string; quantityRelation: number },
+    ];
+
     @IsOptional()
     @IsArray()
     @IsUrl({}, { each: true })

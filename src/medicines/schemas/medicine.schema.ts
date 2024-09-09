@@ -38,6 +38,15 @@ export class Medicine {
     sellPrices: [{ unit: string; price: number }];
 
     @Prop()
+    quantityRelations?: [
+        {
+            upperUnit: BuySellUnits;
+            lowerUnit: BuySellUnits;
+            quantityRelation: number;
+        },
+    ];
+
+    @Prop()
     imageUrls: string[];
 
     @Prop({ type: SchemaTypes.ObjectId, ref: Clinic.name })

@@ -5,7 +5,7 @@ import { OrderItem } from "./orderItemSchema";
 import { Supplier } from "src/suppliers/schemas/supplier.schema";
 import { Clinic } from "src/clinics/schemas/clinic.schema";
 
-@Schema()
+@Schema({ timestamps: true })
 export class Order {
     @Prop({ required: true })
     batchId: string;
@@ -27,6 +27,9 @@ export class Order {
 
     @Prop({ default: false })
     hasAlreadyArrived: boolean;
+
+    @Prop({ default: false })
+    hasBarcodeGenerated: boolean;
 
     @Prop({ type: SchemaTypes.ObjectId, ref: Clinic.name })
     clinic: Clinic;

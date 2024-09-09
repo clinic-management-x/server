@@ -47,6 +47,11 @@ export class UpdateMedicineDto {
     @IsArray()
     sellPrices?: [{ unit: string; price: number }];
 
+    @IsArray()
+    quantityRelations: [
+        { lowerUnit: string; upperUnit: string; quantityRelation: number },
+    ];
+
     @IsOptional()
     @IsArray()
     imageUrls?: { actual: string; preview: string }[];
