@@ -5,6 +5,7 @@ import {
     IsEnum,
     IsNotEmpty,
     IsNumber,
+    IsObject,
     IsOptional,
     IsString,
 } from "class-validator";
@@ -30,6 +31,28 @@ export class OrderItemDto {
     unit: string;
 }
 
+class ItemNameDto {
+    @IsNotEmpty()
+    @IsObjectId({ message: "Not a valid object id" })
+    @IsString()
+    _id: string;
+
+    @IsNotEmpty()
+    @IsString()
+    brandName: string;
+}
+export class OrderItemMainDto {
+    @IsNotEmpty()
+    @IsObject()
+    itemName: ItemNameDto;
+    @IsNotEmpty()
+    @IsNumber()
+    quantity: number;
+
+    @IsNotEmpty()
+    @IsEnum(BuySellUnits)
+    unit: string;
+}
 export class CreateOrderDto {
     @IsOptional()
     @IsString()
@@ -50,7 +73,7 @@ export class CreateOrderDto {
 
     @IsNotEmpty()
     @IsArray()
-    orderItems: OrderItemDto[];
+    orderItems: OrderItemMainDto[];
 
     @IsNotEmpty()
     @IsString()

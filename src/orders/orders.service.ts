@@ -13,6 +13,7 @@ import { FilesService } from "src/files/files.service";
 import { UpdateOrderDto } from "./dto/update-order.dto";
 import { GetBatchIdDto, GetOrdersDto } from "./dto/get-orders.dto";
 import { UpdateOrderItemDto } from "./dto/update-order-item.dto";
+import { Medicine } from "src/medicines/schemas/medicine.schema";
 
 const populateQuery = [
     {
@@ -34,6 +35,8 @@ export class OrdersService {
         @InjectModel(Order.name) private orderModel: Model<Order>,
         @InjectModel(OrderItem.name)
         private orderItemModel: Model<OrderItem>,
+        @InjectModel(Medicine.name)
+        private medicineModel: Model<Medicine>,
         private filesService: FilesService
     ) {}
 
@@ -122,10 +125,13 @@ export class OrdersService {
             orderItems: orderItems.map((item) => item._id),
             clinic: clinicId,
         };
-        const order = (await this.orderModel.create(data)).populate(
-            populateQuery
-        );
-        return order;
+
+        const order = await this.orderModel.create(data);
+
+        if (order.hasAlreadyArrived) {
+            await this.increaseStockQuantity(orderItems);
+        }
+        return order.populate(populateQuery);
     }
 
     async updateOrder(
@@ -155,9 +161,24 @@ export class OrdersService {
             order[key] = updateOrderDto[key];
         });
 
-        const updatedOrder = (await order.save()).populate(populateQuery);
+        const updatedOrder = await (await order.save()).populate(populateQuery);
+
+        if (updatedOrder.hasAlreadyArrived) {
+            await this.increaseStockQuantity(updatedOrder.orderItems);
+        }
 
         return updatedOrder;
+    }
+
+    async increaseStockQuantity(orderItems: any[]) {
+        await Promise.all(
+            orderItems.map(async (orderItem: any) => {
+                await this.medicineModel.findByIdAndUpdate(
+                    orderItem.itemName._id,
+                    { $inc: { stockQuantity: orderItem.quantity } }
+                );
+            })
+        );
     }
 
     async createOrderItem(
