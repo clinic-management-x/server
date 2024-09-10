@@ -68,6 +68,34 @@ export class OrdersService {
         };
     }
 
+    async getValidOrdersForBarcodeGeneration(
+        query: GetOrdersDto,
+        clinicId: ObjectId
+    ): Promise<ObjectList<object>> {
+        const filter = {
+            ...(query.search
+                ? { batchId: { $regex: query.search, $options: "i" } }
+                : {}),
+
+            clinic: clinicId,
+            hasAlreadyArrived: true,
+            hasBarcodeGenerated: false,
+        };
+        const [data, count] = await Promise.all([
+            this.orderModel
+                .find(filter)
+                .skip(query.skip)
+                .limit(query.limit)
+                .populate(populateQuery)
+                .exec(),
+            this.orderModel.find(filter).countDocuments(),
+        ]);
+        return {
+            data,
+            count,
+        };
+    }
+
     async getOrder(
         orderId: ObjectId,
         clinicId: ObjectId

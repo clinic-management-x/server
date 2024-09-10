@@ -7,16 +7,20 @@ import { Clinic } from "src/clinics/schemas/clinic.schema";
 
 @Schema({
     collection: "bar_codes",
+    timestamps: true,
 })
 export class BarCode {
     @Prop({ required: true, type: SchemaTypes.ObjectId, ref: Medicine.name })
     medicine: Types.ObjectId;
 
     @Prop({ required: true, type: SchemaTypes.ObjectId, ref: Order.name })
-    batchId: Types.ObjectId;
+    orderId: Types.ObjectId;
 
     @Prop({ required: true })
-    barCodeNumber: string;
+    batchId: string;
+
+    @Prop({ required: true })
+    barcode: string;
 
     @Prop()
     barCodeUrl?: string;

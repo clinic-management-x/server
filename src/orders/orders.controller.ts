@@ -23,11 +23,22 @@ export class OrdersController {
     constructor(private orderService: OrdersService) {}
 
     @Get()
-    async getAllMedicines(
+    async getAllOrders(
         @Query() query: GetOrdersDto,
         @Request() request: ClinicRequest
     ) {
         return this.orderService.getAllOrders(query, request.clinic._id);
+    }
+
+    @Get("/valid")
+    async getValidOrdersForBarcodeGeneration(
+        @Query() query: GetOrdersDto,
+        @Request() request: ClinicRequest
+    ) {
+        return this.orderService.getValidOrdersForBarcodeGeneration(
+            query,
+            request.clinic._id
+        );
     }
 
     @Get("/list")

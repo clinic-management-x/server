@@ -19,11 +19,15 @@ export class CreateBarcodeDto {
     @IsNotEmpty()
     @IsObjectId({ message: "Not a valid object id" })
     @IsString()
-    batchId: string;
+    orderId: string;
 
     @IsNotEmpty()
     @IsString()
-    barCodeNumber: string;
+    batchId: string;
+
+    @IsOptional()
+    @IsString()
+    barcode?: string;
 
     @IsOptional()
     @IsUrl()
