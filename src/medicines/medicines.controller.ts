@@ -82,7 +82,7 @@ export class MedicinesController {
         );
     }
 
-    @Post("/barcode")
+    @Post("/barcodes")
     async createBarcode(
         @Body() createBarcodeDto: CreateBarcodeDto[],
         @Request() request: ClinicRequest
