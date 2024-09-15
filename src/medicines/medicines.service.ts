@@ -1,6 +1,7 @@
 import {
     BadRequestException,
     Injectable,
+    InternalServerErrorException,
     NotFoundException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
@@ -35,7 +36,7 @@ const populateQuery = [
     {
         path: "activeIngredients",
         populate: {
-            path: "activeIngredient", // Replace '_id' with the actual reference field in ActiveIngredient
+            path: "activeIngredient",
         },
     },
 ];
@@ -185,27 +186,40 @@ export class MedicinesService {
         createMedicineDto: CreateMedicineDto,
         clinicId: ObjectId
     ): Promise<MedicineDocument> {
-        const activeIngredients =
-            await this.activeIngredientComponentModel.insertMany(
-                createMedicineDto.activeIngredients.map((ingredient) => {
-                    return {
-                        activeIngredient: ingredient._id,
-                        unit: ingredient.unit,
-                        strength: ingredient.strength,
-                    };
-                })
+        const session = await this.medicineModel.startSession();
+        session.startTransaction();
+        try {
+            const activeIngredients =
+                await this.activeIngredientComponentModel.insertMany(
+                    createMedicineDto.activeIngredients.map((ingredient) => {
+                        return {
+                            activeIngredient: ingredient._id,
+                            unit: ingredient.unit,
+                            strength: ingredient.strength,
+                        };
+                    }),
+                    { session }
+                );
+
+            const data = {
+                ...createMedicineDto,
+                activeIngredients: activeIngredients.map(
+                    (ingridient) => ingridient._id
+                ),
+                clinic: clinicId,
+            };
+            const medicine = new this.medicineModel(data);
+            await medicine.save({ session });
+            await session.commitTransaction();
+            session.endSession();
+            return medicine.populate(populateQuery);
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw new InternalServerErrorException(
+                "Something wrong during transaction."
             );
-
-        const data = {
-            ...createMedicineDto,
-            activeIngredients: activeIngredients.map(
-                (ingridient) => ingridient._id
-            ),
-            clinic: clinicId,
-        };
-        const medicine = await this.medicineModel.create(data);
-
-        return medicine.populate(populateQuery);
+        }
     }
 
     async updateMedicine(
@@ -268,46 +282,81 @@ export class MedicinesService {
         dto: ActiveIngredientCreateDto,
         clinicId: ObjectId
     ): Promise<MedicineDocument> {
-        const medicine = await this.medicineModel
-            .findOne({
-                _id: medicineId,
-                clinic: clinicId,
-            })
-            .populate(populateQuery)
-            .exec();
+        const session = await this.medicineModel.startSession();
+        session.startTransaction();
+        try {
+            const medicine = await this.medicineModel
+                .findOne(
+                    {
+                        _id: medicineId,
+                        clinic: clinicId,
+                    },
+                    null,
+                    { session }
+                )
+                .populate(populateQuery)
+                .exec();
 
-        if (!medicine) throw new NotFoundException("Medicine Not Found.");
+            if (!medicine) throw new NotFoundException("Medicine Not Found.");
 
-        if (
-            medicine.activeIngredients.find(
-                (ingredient: any) =>
-                    ingredient.activeIngredient._id.toString() ==
-                    dto.activeIngredient.toString()
+            if (
+                medicine.activeIngredients.find(
+                    (ingredient: any) =>
+                        ingredient.activeIngredient._id.toString() ==
+                        dto.activeIngredient.toString()
+                )
             )
-        )
-            throw new BadRequestException("Already Existing Ingredient.");
-        const activeIngredientComponent =
-            await this.activeIngredientComponentModel.create(dto);
+                throw new BadRequestException("Already Existing Ingredient.");
+            const activeIngredientComponent =
+                new this.activeIngredientComponentModel(dto);
+            await activeIngredientComponent.save({ session });
 
-        medicine.activeIngredients.push(activeIngredientComponent._id);
-        await medicine.save();
-
-        return medicine.populate(populateQuery);
+            medicine.activeIngredients.push(activeIngredientComponent._id);
+            await medicine.save({ session });
+            await session.commitTransaction();
+            session.endSession();
+            return medicine.populate(populateQuery);
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw new InternalServerErrorException(
+                "Something wrong during transaction."
+            );
+        }
     }
     async deleteMedicine(
         medicineId: ObjectId,
         clinicId: ObjectId
     ): Promise<object> {
-        const medicine = await this.medicineModel.findOne({
-            _id: medicineId,
-            clinic: clinicId,
-        });
-        if (!medicine) throw new NotFoundException("Medicine Not Found.");
-        await this.activeIngredientComponentModel.deleteMany({
-            _id: { $in: medicine.activeIngredients },
-        });
-        await medicine.deleteOne({ _id: medicineId });
-        return { deletedCount: 1 };
+        const session = await this.medicineModel.startSession();
+        session.startTransaction();
+        try {
+            const medicine = await this.medicineModel.findOne(
+                {
+                    _id: medicineId,
+                    clinic: clinicId,
+                },
+                null,
+                { session }
+            );
+            if (!medicine) throw new NotFoundException("Medicine Not Found.");
+            await this.activeIngredientComponentModel.deleteMany(
+                {
+                    _id: { $in: medicine.activeIngredients },
+                },
+                { session }
+            );
+            await this.medicineModel.findByIdAndDelete(medicineId, { session });
+            await session.commitTransaction();
+            session.endSession();
+            return { deletedCount: 1 };
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw new InternalServerErrorException(
+                "Something wrong during transaction."
+            );
+        }
     }
 
     async deleteActiveIngredientComponent(
@@ -315,19 +364,38 @@ export class MedicinesService {
         medicineId: ObjectId,
         clinicId: ObjectId
     ): Promise<MedicineDocument> {
-        const medicine = await this.medicineModel.findOne({
-            _id: medicineId,
-            clinic: clinicId,
-        });
-        if (!medicine) throw new NotFoundException("Medicine Not Found.");
+        const session = await this.medicineModel.startSession();
+        session.startTransaction();
+        try {
+            const medicine = await this.medicineModel.findOne(
+                {
+                    _id: medicineId,
+                    clinic: clinicId,
+                },
+                null,
+                { session }
+            );
+            if (!medicine) throw new NotFoundException("Medicine Not Found.");
 
-        await this.activeIngredientComponentModel.deleteOne({
-            _id: ingredientId,
-        });
-        medicine.activeIngredients = medicine.activeIngredients.filter(
-            (id) => id.toString() !== ingredientId.toString()
-        );
-        await medicine.save();
-        return medicine.populate(populateQuery);
+            await this.activeIngredientComponentModel.deleteOne(
+                {
+                    _id: ingredientId,
+                },
+                { session }
+            );
+            medicine.activeIngredients = medicine.activeIngredients.filter(
+                (id) => id.toString() !== ingredientId.toString()
+            );
+            await medicine.save({ session });
+            await session.commitTransaction();
+            session.endSession();
+            return medicine.populate(populateQuery);
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw new InternalServerErrorException(
+                "Something wrong during transaction."
+            );
+        }
     }
 }

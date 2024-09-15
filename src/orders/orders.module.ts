@@ -9,6 +9,7 @@ import {
 import { FilesModule } from "src/files/files.module";
 import { Order, OrderSchema } from "./schemas/order.schema";
 import { OrderItem, OrderItemSchema } from "./schemas/orderItemSchema";
+import { BarCode, BarCodeSchema } from "src/medicines/schemas/barcode.schema";
 
 @Module({
     imports: [
@@ -19,6 +20,7 @@ import { OrderItem, OrderItemSchema } from "./schemas/orderItemSchema";
                 schema: OrderItemSchema,
             },
             { name: Medicine.name, schema: MedicineSchema },
+            { name: BarCode.name, schema: BarCodeSchema },
         ]),
         FilesModule,
     ],

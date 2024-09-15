@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+    Injectable,
+    InternalServerErrorException,
+    NotFoundException,
+} from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Supplier, SupplierDocument } from "./schemas/supplier.schema";
 import { Model } from "mongoose";
@@ -86,55 +90,93 @@ export class SuppliersService {
         data: CreateSupplierDto,
         clinicId: ObjectId
     ): Promise<SupplierDocument> {
-        const s3AvatarUrl = data.company.avatarUrl;
-        if (s3AvatarUrl) {
-            await this.filesService.checkFilesByUrls([s3AvatarUrl], clinicId);
-        }
-        let medRepresentatives = [];
+        const session = await this.supplierModel.startSession();
+        session.startTransaction();
+        try {
+            const s3AvatarUrl = data.company.avatarUrl;
+            if (s3AvatarUrl) {
+                await this.filesService.checkFilesByUrls(
+                    [s3AvatarUrl],
+                    clinicId
+                );
+            }
+            let medRepresentatives = [];
 
-        if (data?.representatives?.length) {
-            medRepresentatives = await this.MRModel.insertMany(
-                data.representatives.map((representative) => ({
-                    ...representative,
-                    clinic: clinicId,
-                }))
+            if (data?.representatives?.length) {
+                medRepresentatives = await this.MRModel.insertMany(
+                    data.representatives.map((representative) => ({
+                        ...representative,
+                        clinic: clinicId,
+                    })),
+                    { session }
+                );
+            }
+            const supplierCompany = new this.supplierModel({
+                ...data.company,
+                clinic: clinicId,
+                medRepresentatives: medRepresentatives?.length
+                    ? medRepresentatives.map((data) => data._id)
+                    : [],
+            });
+            await supplierCompany.save({ session });
+
+            await session.commitTransaction();
+            session.endSession();
+
+            return supplierCompany;
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw new InternalServerErrorException(
+                "Something wrong during transaction."
             );
         }
-
-        const supplierCompany = await this.supplierModel.create({
-            ...data.company,
-            clinic: clinicId,
-            medRepresentatives: medRepresentatives?.length
-                ? medRepresentatives.map((data) => data._id)
-                : [],
-        });
-
-        return supplierCompany;
     }
 
     async createMR(data: MRDto, clinicId: ObjectId): Promise<SupplierDocument> {
-        const supplierCompany = await this.supplierModel
-            .findOne({ _id: data._id, clinic: clinicId })
-            .exec();
-        if (!supplierCompany)
-            throw new NotFoundException("Supplier Company not found.");
-        const representative = await this.MRModel.create({
-            ...data.mr,
-            clinic: clinicId,
-            supplierCompany: supplierCompany._id,
-        });
-        const supplier = await this.supplierModel.findOne({ _id: data._id });
+        const session = await this.supplierModel.startSession();
+        session.startTransaction();
+        try {
+            const supplierCompany = await this.supplierModel
+                .findOne({ _id: data._id, clinic: clinicId }, null, { session })
+                .exec();
+            if (!supplierCompany)
+                throw new NotFoundException("Supplier Company not found.");
+            const representative = new this.MRModel({
+                ...data.mr,
+                clinic: clinicId,
+                supplierCompany: supplierCompany._id,
+            });
+            await representative.save({ session });
 
-        supplier.medRepresentatives = [
-            ...supplier.medRepresentatives,
-            representative._id,
-        ];
+            const supplier = await this.supplierModel.findOne(
+                {
+                    _id: data._id,
+                },
+                null,
+                { session }
+            );
 
-        const updatedSupplier = (await supplier.save()).populate(
-            "medRepresentatives"
-        );
+            supplier.medRepresentatives = [
+                ...supplier.medRepresentatives,
+                representative._id,
+            ];
 
-        return updatedSupplier;
+            const updatedSupplier = (await supplier.save({ session })).populate(
+                "medRepresentatives"
+            );
+
+            await session.commitTransaction();
+            session.endSession();
+
+            return updatedSupplier;
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw new InternalServerErrorException(
+                "Something wrong during transaction."
+            );
+        }
     }
 
     async updateSupplier(
@@ -190,17 +232,32 @@ export class SuppliersService {
     }
 
     async deleteSupplier(_id: ObjectId, clinicId: ObjectId): Promise<object> {
-        const supplierCompany = await this.supplierModel
-            .findOne({ _id, clinic: clinicId })
-            .exec();
-        if (!supplierCompany)
-            throw new NotFoundException("Supplier Company not found.");
-        await this.MRModel.deleteMany({
-            supplierCompany: _id,
-            clinic: clinicId,
-        }).exec();
-        await this.supplierModel.deleteOne({ _id }).exec();
-        return { deleteCount: 1 };
+        const session = await this.supplierModel.startSession();
+        session.startTransaction();
+        try {
+            const supplierCompany = await this.supplierModel
+                .findOne({ _id, clinic: clinicId }, null, { session })
+                .exec();
+            if (!supplierCompany)
+                throw new NotFoundException("Supplier Company not found.");
+            await this.MRModel.deleteMany(
+                {
+                    supplierCompany: _id,
+                    clinic: clinicId,
+                },
+                { session }
+            ).exec();
+            await this.supplierModel.deleteOne({ _id }, { session }).exec();
+            await session.commitTransaction();
+            session.endSession();
+            return { deleteCount: 1 };
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw new InternalServerErrorException(
+                "Something wrong during transaction."
+            );
+        }
     }
 
     async deleteMR(
@@ -208,23 +265,49 @@ export class SuppliersService {
         supplier_id: ObjectId,
         clinicId: ObjectId
     ): Promise<object> {
-        const representative = await this.MRModel.findOne({
-            _id,
-            clinic: clinicId,
-        });
-        if (!representative)
-            throw new NotFoundException("Medical representative not found.");
+        const session = await this.supplierModel.startSession();
+        session.startTransaction();
+        try {
+            const representative = await this.MRModel.findOne(
+                {
+                    _id,
+                    clinic: clinicId,
+                },
+                null,
+                { session }
+            );
+            if (!representative)
+                throw new NotFoundException(
+                    "Medical representative not found."
+                );
 
-        const supplier = await this.supplierModel.findOne({ _id: supplier_id });
+            const supplier = await this.supplierModel.findOne(
+                {
+                    _id: supplier_id,
+                },
+                null,
+                { session }
+            );
 
-        supplier.medRepresentatives = supplier.medRepresentatives.filter(
-            (mr_id) => mr_id.toString() !== _id
-        );
+            supplier.medRepresentatives = supplier.medRepresentatives.filter(
+                (mr_id) => mr_id.toString() !== _id
+            );
 
-        (await supplier.save()).populate("medRepresentatives");
+            (await supplier.save({ session })).populate("medRepresentatives");
 
-        await this.MRModel.deleteOne({ _id, clinic: clinicId }).exec();
-
-        return supplier;
+            await this.MRModel.deleteOne(
+                { _id, clinic: clinicId },
+                { session }
+            ).exec();
+            await session.commitTransaction();
+            session.endSession();
+            return supplier;
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw new InternalServerErrorException(
+                "Something wrong during transaction."
+            );
+        }
     }
 }

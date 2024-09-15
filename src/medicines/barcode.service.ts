@@ -1,11 +1,14 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, InternalServerErrorException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { BarCode, ScanHistory } from "./schemas/barcode.schema";
 import { Model } from "mongoose";
 import { FilesService } from "src/files/files.service";
-import bwipjs from "bwip-js";
 import { ObjectId } from "src/shared/typings";
 import { CreateBarcodeDto } from "./dto/barcode-dto";
+import * as bwipjs from "bwip-js";
+import { FilePurpose } from "src/shared/shared.enum";
+import { GetMedicinesDto } from "./dto/get-medicines.dto";
+import { Order } from "src/orders/schemas/order.schema";
 
 @Injectable()
 export class BarCodeService {
@@ -14,8 +17,61 @@ export class BarCodeService {
         private barCodeModel: Model<BarCode>,
         @InjectModel(ScanHistory.name)
         private scanModel: Model<ScanHistory>,
+        @InjectModel(Order.name)
+        private orderModel: Model<Order>,
         private filesService: FilesService
     ) {}
+
+    async getAllBarcodes(
+        query: GetMedicinesDto,
+        clinicId: ObjectId
+    ): Promise<{ data: BarCode[]; count: number }> {
+        const filter = {
+            ...(query.search
+                ? { brandName: { $regex: query.search, $options: "i" } }
+                : {}),
+
+            clinic: clinicId,
+        };
+
+        const [data, count] = await Promise.all([
+            this.barCodeModel
+                .find(filter)
+                .skip(query.skip)
+                .limit(query.limit)
+                .populate([
+                    { path: "medicine", select: "_id brandName" },
+                    {
+                        path: "orderId",
+                        select: "_id supplier",
+                        populate: {
+                            path: "supplier",
+                            select: "_id name",
+                        },
+                    },
+                ])
+                .exec(),
+            this.barCodeModel.find(filter).countDocuments(),
+        ]);
+
+        const newData = (await Promise.all(
+            data.map(async (barcode) => {
+                if (barcode.barCodeUrl) {
+                    const url = await this.filesService.createPresignedUrl(
+                        barcode.barCodeUrl
+                    );
+
+                    barcode.barCodeUrl = url;
+                }
+                return barcode;
+            })
+        )) as BarCode[];
+
+        return {
+            data: newData,
+            count,
+        };
+    }
 
     async createBarCodes(
         createBarcodeDto: CreateBarcodeDto[],
@@ -28,40 +84,65 @@ export class BarCodeService {
             do {
                 barcode = Math.floor(
                     1000000000 + Math.random() * 9000000000
-                ).toString(); // Generates a random 10-digit number
-            } while (generatedBarcodes.has(barcode)); // Check if the barcode is already generated
+                ).toString();
+            } while (generatedBarcodes.has(barcode));
 
-            generatedBarcodes.add(barcode); // Add the barcode to the Set
+            generatedBarcodes.add(barcode);
             return `${barcode}`;
         };
-
         const dataArr = await Promise.all(
             createBarcodeDto.map(async (data) => {
-                // const buffer = await bwipjs.toBuffer({
-                //     bcid: "code128",
-                //     text: data.batchId,
-                //     scale: 3,
-                //     height: 10,
-                //     includetext: true,
-                //     textxalign: "center",
-                // });
-                // const barcodeBase64 = `data:image/gif;base64,${buffer.toString("base64")}`;
+                const barcodenum = generateUniqueBarcode();
+                const buffer = await bwipjs.toBuffer({
+                    bcid: "code128",
+                    text: `${data.batchId} ${barcodenum}`,
+                    scale: 3,
+                    height: 10,
+                    includetext: true,
+                    textxalign: "center",
+                });
+                const imagedata = (await this.filesService.uploadFile(
+                    {
+                        originalname: data.batchId,
+                        mimetype: "image/jpeg",
+                        buffer: buffer,
+                    },
+                    clinicId,
+                    FilePurpose.BARCODE
+                )) as { url: string };
 
                 return {
                     ...data,
                     clinic: clinicId,
-                    //barCodeUrl: barcodeBase64,
-                    barcode: generateUniqueBarcode(),
+                    barCodeUrl: imagedata.url,
+                    barcode: barcodenum,
                 };
             })
         );
-        console.log("dataArr", dataArr);
-        const barcodes = await Promise.all(
-            await this.barCodeModel.insertMany(dataArr)
-        );
+        const session = await this.barCodeModel.startSession();
+        session.startTransaction();
 
-        return barcodes;
+        try {
+            const barcodes = await Promise.all(
+                await this.barCodeModel.insertMany(dataArr, {
+                    session: session,
+                })
+            );
+            await this.orderModel.findByIdAndUpdate(
+                createBarcodeDto[0].orderId,
+                { hasBarcodeGenerated: true },
+                { session: session }
+            );
+
+            await session.commitTransaction();
+            session.endSession();
+            return barcodes;
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw new InternalServerErrorException(
+                "Something wrong during transaction."
+            );
+        }
     }
-
-    // Function to generate a random barcode number
 }

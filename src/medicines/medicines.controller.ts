@@ -32,7 +32,7 @@ import { BarCodeService } from "./barcode.service";
 export class MedicinesController {
     constructor(
         private medicinesService: MedicinesService,
-        private qrCodeService: BarCodeService
+        private barcodeService: BarCodeService
     ) {}
 
     @Get("generic-drugs")
@@ -63,6 +63,14 @@ export class MedicinesController {
         );
     }
 
+    @Get("/barcodes")
+    async getAllBarcodes(
+        @Query() query: GetMedicinesDto,
+        @Request() request: ClinicRequest
+    ) {
+        return this.barcodeService.getAllBarcodes(query, request.clinic._id);
+    }
+
     @Get(":_id")
     async get(
         @Param() { _id }: GetMedicineDto,
@@ -87,7 +95,7 @@ export class MedicinesController {
         @Body() createBarcodeDto: CreateBarcodeDto[],
         @Request() request: ClinicRequest
     ) {
-        return this.qrCodeService.createBarCodes(
+        return this.barcodeService.createBarCodes(
             createBarcodeDto,
             request.clinic._id
         );

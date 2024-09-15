@@ -51,7 +51,9 @@ export class FilesService {
     }
 
     async uploadFile(
-        file: Express.Multer.File,
+        file:
+            | Express.Multer.File
+            | { originalname: string; buffer: Buffer; mimetype: string },
         clinicId: ObjectId,
         purpose: FilePurpose
     ): Promise<object> {
