@@ -18,6 +18,7 @@ import {
     ScanHistory,
     ScanHistorySchema,
 } from "./schemas/barcode.schema";
+import { Order, OrderSchema } from "src/orders/schemas/order.schema";
 
 @Module({
     imports: [
@@ -30,6 +31,7 @@ import {
             { name: GenericDrug.name, schema: GenericDrugSchema },
             { name: Medicine.name, schema: MedicineSchema },
             { name: BarCode.name, schema: BarCodeSchema },
+            { name: Order.name, schema: OrderSchema },
             { name: ScanHistory.name, schema: ScanHistorySchema },
         ]),
         FilesModule,

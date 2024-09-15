@@ -1,12 +1,13 @@
 import {
     BadRequestException,
     Injectable,
+    InternalServerErrorException,
     NotFoundException,
 } from "@nestjs/common";
 import { CreateOrderDto, OrderItemDto } from "./dto/create-order.dto";
 import { ObjectId, ObjectList } from "src/shared/typings";
 import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
+import { ClientSession, Model } from "mongoose";
 import { Order, OrderDocument } from "./schemas/order.schema";
 import { OrderItem } from "./schemas/orderItemSchema";
 import { FilesService } from "src/files/files.service";
@@ -14,6 +15,7 @@ import { UpdateOrderDto } from "./dto/update-order.dto";
 import { GetBatchIdDto, GetOrdersDto } from "./dto/get-orders.dto";
 import { UpdateOrderItemDto } from "./dto/update-order-item.dto";
 import { Medicine } from "src/medicines/schemas/medicine.schema";
+import { BarCode } from "src/medicines/schemas/barcode.schema";
 
 const populateQuery = [
     {
@@ -37,6 +39,8 @@ export class OrdersService {
         private orderItemModel: Model<OrderItem>,
         @InjectModel(Medicine.name)
         private medicineModel: Model<Medicine>,
+        @InjectModel(BarCode.name)
+        private barcodeModel: Model<BarCode>,
         private filesService: FilesService
     ) {}
 
@@ -138,28 +142,50 @@ export class OrdersService {
         createOrderDto: CreateOrderDto,
         clinicId: ObjectId
     ): Promise<OrderDocument> {
-        const alreadyExistingBatchId = await this.orderModel.findOne({
-            batchId: createOrderDto.batchId,
-            clinic: clinicId,
-        });
-        if (alreadyExistingBatchId)
-            throw new BadRequestException("BatchId must be unique.");
+        const session = await this.orderModel.startSession();
+        session.startTransaction();
 
-        const orderItems = await this.orderItemModel.insertMany(
-            createOrderDto.orderItems
-        );
-        const data = {
-            ...createOrderDto,
-            orderItems: orderItems.map((item) => item._id),
-            clinic: clinicId,
-        };
+        try {
+            const alreadyExistingBatchId = await this.orderModel.findOne(
+                {
+                    batchId: createOrderDto.batchId,
+                    clinic: clinicId,
+                },
+                null,
+                { session }
+            );
+            if (alreadyExistingBatchId)
+                throw new BadRequestException("BatchId must be unique.");
 
-        const order = await this.orderModel.create(data);
+            const orderItems = await this.orderItemModel.insertMany(
+                createOrderDto.orderItems,
+                { session }
+            );
+            const data = {
+                ...createOrderDto,
+                orderItems: orderItems.map((item) => item._id),
+                clinic: clinicId,
+            };
+            const order = new this.orderModel(data);
+            await order.save({ session });
 
-        if (order.hasAlreadyArrived) {
-            await this.increaseStockQuantity(orderItems);
+            // const order = await this.orderModel.create(data, {
+            //     session: session,
+            // });
+
+            if (order.hasAlreadyArrived) {
+                await this.increaseStockQuantity(orderItems, session);
+            }
+            await session.commitTransaction();
+            session.endSession();
+            return order.populate(populateQuery);
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw new InternalServerErrorException(
+                "Something wrong during transaction."
+            );
         }
-        return order.populate(populateQuery);
     }
 
     async updateOrder(
@@ -167,43 +193,71 @@ export class OrdersService {
         updateOrderDto: UpdateOrderDto,
         clinicId: ObjectId
     ): Promise<OrderDocument> {
-        const order = await this.orderModel.findOne({
-            _id: orderId,
-            clinic: clinicId,
-        });
-        if (!order) throw new NotFoundException("Order Not Found");
-        if (updateOrderDto.batchId) {
-            const alreadyExistingBatchId = await this.orderModel.findOne({
-                batchId: updateOrderDto.batchId,
-                clinic: clinicId,
-            });
-            if (
-                alreadyExistingBatchId &&
-                alreadyExistingBatchId._id.toString() !== order._id.toString()
-            ) {
-                throw new BadRequestException("Batch Id must be unique");
+        const session = await this.orderModel.startSession();
+        session.startTransaction();
+
+        try {
+            const order = await this.orderModel.findOne(
+                {
+                    _id: orderId,
+                    clinic: clinicId,
+                },
+                null,
+                { session }
+            );
+            if (!order) throw new NotFoundException("Order Not Found");
+            if (updateOrderDto.batchId) {
+                const alreadyExistingBatchId = await this.orderModel.findOne(
+                    {
+                        batchId: updateOrderDto.batchId,
+                        clinic: clinicId,
+                    },
+                    null,
+                    { session }
+                );
+                if (
+                    alreadyExistingBatchId &&
+                    alreadyExistingBatchId._id.toString() !==
+                        order._id.toString()
+                ) {
+                    throw new BadRequestException("Batch Id must be unique");
+                }
             }
+            Object.keys(updateOrderDto).map((key) => {
+                order[key] = updateOrderDto[key];
+            });
+
+            const updatedOrder = await (
+                await order.save({ session })
+            ).populate(populateQuery);
+
+            if (updatedOrder.hasAlreadyArrived) {
+                await this.increaseStockQuantity(
+                    updatedOrder.orderItems,
+                    session
+                );
+            }
+            await session.commitTransaction();
+            session.endSession();
+            return updatedOrder;
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw new InternalServerErrorException(
+                "Something wrong during transaction."
+            );
         }
-
-        Object.keys(updateOrderDto).map((key) => {
-            order[key] = updateOrderDto[key];
-        });
-
-        const updatedOrder = await (await order.save()).populate(populateQuery);
-
-        if (updatedOrder.hasAlreadyArrived) {
-            await this.increaseStockQuantity(updatedOrder.orderItems);
-        }
-
-        return updatedOrder;
     }
 
-    async increaseStockQuantity(orderItems: any[]) {
+    async increaseStockQuantity(orderItems: any[], session: ClientSession) {
         await Promise.all(
             orderItems.map(async (orderItem: any) => {
                 await this.medicineModel.findByIdAndUpdate(
                     orderItem.itemName._id,
-                    { $inc: { stockQuantity: orderItem.quantity } }
+                    { $inc: { stockQuantity: orderItem.quantity } },
+                    {
+                        session,
+                    }
                 );
             })
         );
@@ -214,18 +268,35 @@ export class OrdersService {
         orderItemDto: OrderItemDto,
         clinicId: ObjectId
     ) {
-        const order = await this.orderModel.findOne({
-            _id: orderId,
-            clinic: clinicId,
-        });
-        if (!order) throw new NotFoundException("Order Not Found");
+        const session = await this.orderItemModel.startSession();
+        session.startTransaction();
+        try {
+            const order = await this.orderModel.findOne(
+                {
+                    _id: orderId,
+                    clinic: clinicId,
+                },
+                null,
+                { session }
+            );
+            if (!order) throw new NotFoundException("Order Not Found");
+            const orderItem = new this.orderItemModel(orderItemDto);
 
-        const orderItem = await this.orderItemModel.create(orderItemDto);
+            await orderItem.save({ session });
 
-        if (orderItem) {
-            order.orderItems = [...order.orderItems, orderItem._id];
-            await order.save();
-            return order.populate(populateQuery);
+            if (orderItem) {
+                order.orderItems = [...order.orderItems, orderItem._id];
+                await order.save({ session });
+                return order.populate(populateQuery);
+            }
+            await session.commitTransaction();
+            session.endSession();
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw new InternalServerErrorException(
+                "Something wrong during transaction."
+            );
         }
     }
 
@@ -240,49 +311,142 @@ export class OrdersService {
         });
         if (!order) throw new NotFoundException("Order Not Found");
 
-        await this.orderItemModel
-            .findByIdAndUpdate(updateOrderItemDto.itemId, {
-                quantity: updateOrderItemDto.quantity,
-                unit: updateOrderItemDto.unit,
-            })
-            .exec();
+        if (order.hasAlreadyArrived) {
+            await this.orderItemModel
+                .findByIdAndUpdate(updateOrderItemDto.itemId, {
+                    quantity: updateOrderItemDto.quantity,
+                    unit: updateOrderItemDto.unit,
+                })
+                .exec();
 
-        const orderAfterUpdated = await this.orderModel.findOne({
-            _id: orderId,
-            clinic: clinicId,
-        });
-        return orderAfterUpdated.populate(populateQuery);
+            const orderAfterUpdated = await this.orderModel.findOne({
+                _id: orderId,
+                clinic: clinicId,
+            });
+
+            return orderAfterUpdated.populate(populateQuery);
+        }
     }
 
     async deleteOrderItem(id: ObjectId, orderId: ObjectId, clinicId: ObjectId) {
-        const order = await this.orderModel.findOne({
-            _id: orderId,
-            clinic: clinicId,
-        });
-        if (!order) throw new NotFoundException("Order Not Found");
+        const session = await this.orderItemModel.startSession();
+        session.startTransaction();
+        try {
+            const order = await this.orderModel.findOne(
+                {
+                    _id: orderId,
+                    clinic: clinicId,
+                },
+                null,
+                { session }
+            );
+            if (!order) throw new NotFoundException("Order Not Found");
+            const orderItemToDelete = await this.orderItemModel.findOne({
+                _id: id,
+            });
 
-        await this.orderItemModel.findByIdAndDelete(id);
+            await this.orderItemModel.findByIdAndDelete(id, { session });
 
-        order.orderItems = order.orderItems.filter(
-            (itemid) => itemid.toString() !== id.toString()
-        );
-        await order.save();
-        return order.populate(populateQuery);
-    }
-    async deleteOrder(id: ObjectId, clinicId: ObjectId) {
-        const order = await this.orderModel.findOne({
-            _id: id,
-            clinic: clinicId,
-        });
-        if (!order) throw new NotFoundException("Order Not Found");
-        if (order.orderItems) {
-            await Promise.all(
-                order.orderItems.map(async (orderitem) => {
-                    await this.orderItemModel.findByIdAndDelete(orderitem);
-                })
+            if (order.hasAlreadyArrived) {
+                await this.medicineModel.findByIdAndUpdate(
+                    orderItemToDelete.itemName,
+                    { $inc: { stockQuantity: -orderItemToDelete.quantity } },
+                    { session }
+                );
+            }
+            if (order.hasBarcodeGenerated) {
+                await this.barcodeModel.deleteMany(
+                    {
+                        orderId: order._id,
+                        medicine: orderItemToDelete.itemName,
+                    },
+                    { session }
+                );
+            }
+            order.orderItems = order.orderItems.filter(
+                (itemid) => itemid.toString() !== id.toString()
+            );
+            await order.save({ session });
+            await session.commitTransaction();
+            session.endSession();
+            return order.populate(populateQuery);
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw new InternalServerErrorException(
+                "Something wrong during transaction."
             );
         }
-        const deleteOrder = await this.orderModel.findByIdAndDelete(id);
-        if (deleteOrder) return { message: "Successfully deleted." };
+    }
+
+    async deleteOrder(id: ObjectId, clinicId: ObjectId) {
+        const session = await this.orderModel.startSession();
+        session.startTransaction();
+        try {
+            const order = await this.orderModel.findOne(
+                {
+                    _id: id,
+                    clinic: clinicId,
+                },
+                null,
+                { session }
+            );
+            if (!order) throw new NotFoundException("Order Not Found");
+
+            if (order.orderItems) {
+                await Promise.all(
+                    order.orderItems.map(async (orderitem) => {
+                        const orderItemToDelete =
+                            await this.orderItemModel.findOne(
+                                {
+                                    _id: orderitem,
+                                },
+                                null,
+                                { session }
+                            );
+
+                        await this.orderItemModel.findByIdAndDelete(
+                            orderitem,
+
+                            {
+                                session,
+                            }
+                        );
+                        if (order.hasAlreadyArrived) {
+                            await this.medicineModel.findByIdAndUpdate(
+                                orderItemToDelete.itemName,
+                                {
+                                    $inc: {
+                                        stockQuantity:
+                                            -orderItemToDelete.quantity,
+                                    },
+                                },
+                                { session }
+                            );
+                        }
+                    })
+                );
+            }
+
+            if (order.hasBarcodeGenerated) {
+                await this.barcodeModel.deleteMany(
+                    { orderId: order._id },
+                    { session }
+                );
+            }
+            const deleteOrder = await this.orderModel.findByIdAndDelete(id, {
+                session,
+            });
+            await session.commitTransaction();
+            session.endSession();
+            if (deleteOrder) return { message: "Successfully deleted." };
+        } catch (error) {
+            console.log("error", error);
+            await session.abortTransaction();
+            session.endSession();
+            throw new InternalServerErrorException(
+                "Something wrong during transaction."
+            );
+        }
     }
 }
