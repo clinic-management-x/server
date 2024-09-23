@@ -13,6 +13,11 @@ import { StaffsModule } from "./staffs/staffs.module";
 import { SuppliersModule } from "./suppliers/suppliers.module";
 import { MedicinesModule } from "./medicines/medicines.module";
 import { OrdersModule } from "./orders/orders.module";
+import { AlertModule } from "./alert/alert.module";
+import { NotificationsModule } from "./notifications/notifications.module";
+import { ScheduleModule } from "@nestjs/schedule";
+import { CronjobsModule } from "./cronjobs/cronjobs.module";
+import { BullModule } from "@nestjs/bullmq";
 
 @Module({
     imports: [
@@ -20,6 +25,13 @@ import { OrdersModule } from "./orders/orders.module";
         MongooseModule.forRootAsync({
             useClass: MongooseConfigService,
         }),
+        BullModule.forRoot({
+            connection: {
+                host: "localhost",
+                port: 6379,
+            },
+        }),
+        ScheduleModule.forRoot(),
         DoctorsModule,
         ClinicsModule,
         AuthModule,
@@ -29,6 +41,9 @@ import { OrdersModule } from "./orders/orders.module";
         SuppliersModule,
         MedicinesModule,
         OrdersModule,
+        AlertModule,
+        NotificationsModule,
+        CronjobsModule,
     ],
     controllers: [AppController],
     providers: [AppService],
