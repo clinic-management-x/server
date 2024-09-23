@@ -28,7 +28,7 @@ export class BarCodeService {
     ): Promise<{ data: BarCode[]; count: number }> {
         const filter = {
             ...(query.search
-                ? { brandName: { $regex: query.search, $options: "i" } }
+                ? { batchId: { $regex: query.search, $options: "i" } }
                 : {}),
 
             clinic: clinicId,
@@ -138,6 +138,7 @@ export class BarCodeService {
             session.endSession();
             return barcodes;
         } catch (error) {
+            console.log("error", error);
             await session.abortTransaction();
             session.endSession();
             throw new InternalServerErrorException(

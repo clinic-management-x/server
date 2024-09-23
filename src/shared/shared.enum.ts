@@ -64,3 +64,17 @@ export enum OrderStatus {
     PENDING = "PENDING",
     PAID = "PAID",
 }
+
+export enum AlertType {
+    EXPIRED_NEAR = "expired_near",
+    EXPIRED_PAST = "expired_past",
+    PAYMENT_NEAR = "payment_near",
+    PAYMENT_DUE = "payment_due",
+    ARRIVAL_NEAR = "arrival_near",
+    ARRIVAL_DUE = "arrival_due",
+}
+
+export enum NotificationType {
+    MEDICINE = "MEDICINE",
+    ORDER = "ORDER",
+}
