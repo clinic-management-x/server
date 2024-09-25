@@ -10,6 +10,11 @@ import {
     Notification,
     NotificationSchema,
 } from "src/notifications/schemas/notification.schema";
+import { BullModule } from "@nestjs/bullmq";
+import { AlertConsumer } from "./processor.service";
+import { Alert, AlertSchema } from "src/alert/schemas/alert.schema";
+import { BarCode, BarCodeSchema } from "src/medicines/schemas/barcode.schema";
+import { Order, OrderSchema } from "src/orders/schemas/order.schema";
 
 @Module({
     imports: [
@@ -17,8 +22,20 @@ import {
             { name: Medicine.name, schema: MedicineSchema },
             { name: Clinic.name, schema: ClinicSchema },
             { name: Notification.name, schema: NotificationSchema },
+            { name: Alert.name, schema: AlertSchema },
+            { name: BarCode.name, schema: BarCodeSchema },
+            { name: Order.name, schema: OrderSchema },
         ]),
+        BullModule.forRoot({
+            connection: {
+                host: "localhost",
+                port: 6379,
+            },
+        }),
+        BullModule.registerQueue({
+            name: "alert", // Register the "alert" queue
+        }),
     ],
-    providers: [CronjobsService],
+    providers: [CronjobsService, AlertConsumer],
 })
 export class CronjobsModule {}
