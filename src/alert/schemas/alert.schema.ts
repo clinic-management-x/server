@@ -11,7 +11,7 @@ export class Alert {
     @Prop({ required: true, default: false })
     enable: boolean;
 
-    @Prop({ required: true })
+    @Prop({ required: true, default: 0 })
     days: number;
 
     @Prop({ type: SchemaTypes.ObjectId, ref: Clinic.name })
