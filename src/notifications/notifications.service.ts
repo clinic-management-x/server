@@ -26,7 +26,8 @@ export class NotificationsService {
         clinicId: ObjectId
     ): Promise<ObjectList<NotificationDocument>> {
         const filter = {
-            ...(query.type ? { type: query.type } : {}),
+            ...(query.type === "Unread" ? { hasRead: false } : {}),
+
             clinicId,
         };
         const [data, count] = await Promise.all([
@@ -34,7 +35,6 @@ export class NotificationsService {
                 .find(filter)
                 .skip(query.skip)
                 .limit(query.limit)
-                .populate("speciality")
                 .exec(),
             this.notificationModel
                 .find({ ...filter, hasRead: false })
