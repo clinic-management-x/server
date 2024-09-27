@@ -9,6 +9,7 @@ import { BarCode } from "src/medicines/schemas/barcode.schema";
 import { Medicine } from "src/medicines/schemas/medicine.schema";
 import { Notification } from "src/notifications/schemas/notification.schema";
 import { Order, OrderDocument } from "src/orders/schemas/order.schema";
+import { SocketGateway } from "src/socket/socket.gateway";
 
 @Processor("alert")
 export class AlertConsumer extends WorkerHost {
@@ -19,7 +20,8 @@ export class AlertConsumer extends WorkerHost {
         private notificationModel: Model<Notification>,
         @InjectModel(Order.name) private orderModel: Model<Order>,
         @InjectModel(Alert.name) private alertModel: Model<Alert>,
-        @InjectModel(BarCode.name) private barcodeModel: Model<BarCode>
+        @InjectModel(BarCode.name) private barcodeModel: Model<BarCode>,
+        private readonly socketGateway: SocketGateway
     ) {
         super();
     }
@@ -28,6 +30,7 @@ export class AlertConsumer extends WorkerHost {
         try {
             switch (job.name) {
                 case "minimumAlertQuantity":
+                    console.log("inside one");
                     const medicines = await this.medicineModel.find({
                         clinic: job.data._id,
                         $expr: {
@@ -44,8 +47,17 @@ export class AlertConsumer extends WorkerHost {
                             };
                         });
 
-                        await this.notificationModel.insertMany(payloads);
+                        // const notifications =
+                        //     await this.notificationModel.insertMany(payloads);
+                        // if (notifications) {
+                        const companyId = job.data._id;
+                        this.socketGateway.emitNotification(
+                            companyId,
+                            "New Notification"
+                        );
+                        // }
                     }
+
                     break;
 
                 case "expireNear":
@@ -75,7 +87,7 @@ export class AlertConsumer extends WorkerHost {
                                 hasRead: false,
                             };
                         });
-                        await this.notificationModel.insertMany(payloads);
+                        // await this.notificationModel.insertMany(payloads);
                     }
                     break;
 
@@ -106,7 +118,7 @@ export class AlertConsumer extends WorkerHost {
                                 hasRead: false,
                             };
                         });
-                        await this.notificationModel.insertMany(payloads);
+                        //await this.notificationModel.insertMany(payloads);
                     }
                     break;
 
@@ -134,7 +146,7 @@ export class AlertConsumer extends WorkerHost {
                                 hasRead: false,
                             };
                         });
-                        await this.notificationModel.insertMany(payloads);
+                        // await this.notificationModel.insertMany(payloads);
                     }
                     break;
 
@@ -162,7 +174,7 @@ export class AlertConsumer extends WorkerHost {
                                 hasRead: false,
                             };
                         });
-                        await this.notificationModel.insertMany(payloads);
+                        //await this.notificationModel.insertMany(payloads);
                         console.log("DONE");
                     }
                     break;
@@ -179,18 +191,18 @@ export class AlertConsumer extends WorkerHost {
 
     @OnWorkerEvent("active")
     onActive(job: Job) {
-        console.log(
-            `Processing job ${job.id} of type ${job.name} with data ${job.data}...`
-        );
+        // console.log(
+        //     `Processing job ${job.id} of type ${job.name} with data ${job.data}...`
+        // );
     }
 
     @OnWorkerEvent("completed")
     onCompleted(job: Job, result: any) {
-        console.log(`Job ${job.id} completed with result:`, result);
+        //console.log(`Job ${job.id} completed with result:`, result);
     }
 
     @OnWorkerEvent("failed")
     onFailed(job: Job, error: any) {
-        console.error(`Job ${job.id} failed with error:`, error);
+        /// console.error(`Job ${job.id} failed with error:`, error);
     }
 }

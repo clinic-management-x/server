@@ -15,6 +15,8 @@ import { AlertConsumer } from "./processor.service";
 import { Alert, AlertSchema } from "src/alert/schemas/alert.schema";
 import { BarCode, BarCodeSchema } from "src/medicines/schemas/barcode.schema";
 import { Order, OrderSchema } from "src/orders/schemas/order.schema";
+import { SocketGateway } from "src/socket/socket.gateway";
+import { SocketService } from "src/socket/socket.service";
 
 @Module({
     imports: [
@@ -36,6 +38,6 @@ import { Order, OrderSchema } from "src/orders/schemas/order.schema";
             name: "alert", // Register the "alert" queue
         }),
     ],
-    providers: [CronjobsService, AlertConsumer],
+    providers: [CronjobsService, AlertConsumer, SocketGateway, SocketService],
 })
 export class CronjobsModule {}
