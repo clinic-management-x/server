@@ -18,6 +18,7 @@ import { NotificationsModule } from "./notifications/notifications.module";
 import { ScheduleModule } from "@nestjs/schedule";
 import { CronjobsModule } from "./cronjobs/cronjobs.module";
 import { BullModule } from "@nestjs/bullmq";
+import { SocketModule } from "./socket/socket.module";
 
 @Module({
     imports: [
@@ -44,6 +45,7 @@ import { BullModule } from "@nestjs/bullmq";
         AlertModule,
         NotificationsModule,
         CronjobsModule,
+        SocketModule,
     ],
     controllers: [AppController],
     providers: [AppService],

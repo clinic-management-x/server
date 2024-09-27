@@ -17,13 +17,15 @@ import {
     REFRESH_TOKEN_DURATION,
 } from "src/shared/constants";
 import { Payload } from "./payload.interface";
+import { ClinicsService } from "src/clinics/clinics.service";
 
 @Injectable()
 export class AuthService {
     constructor(
         private usersService: UsersService,
         private jwtService: JwtService,
-        private configService: ConfigService
+        private configService: ConfigService,
+        private clinicsService: ClinicsService
     ) {}
 
     async signIn(
@@ -44,11 +46,14 @@ export class AuthService {
         if (!(await bcrypt.compare(providedPass, user.password)))
             throw new UnauthorizedException();
 
+        const clinic = await this.clinicsService.getClinicByUserId(user._id);
+        const clinicId = clinic._id;
+
         const { accessToken, refreshToken, nonce } =
             await this.generateTokenPair(user);
         await this.usersService.clearExpiredSessionsForUser(user._id);
         await this.usersService.createSessionForUser(user._id, nonce);
-        return { accessToken, refreshToken };
+        return { accessToken, refreshToken, clinicId };
     }
 
     async register(email: string, password: string): Promise<UserDocument> {
