@@ -35,6 +35,7 @@ export class NotificationsService {
                 .find(filter)
                 .skip(query.skip)
                 .limit(query.limit)
+                .sort({ createdAt: -1 })
                 .exec(),
             this.notificationModel
                 .find({ ...filter, hasRead: false })
@@ -73,6 +74,18 @@ export class NotificationsService {
             return notificationToUpdate;
         } else {
             throw new BadRequestException("No data found.");
+        }
+    }
+
+    async markAllAsRead(clinicId: ObjectId): Promise<object> {
+        const updatedNotifications = await this.notificationModel.updateMany(
+            { hasRead: false, clinicId: clinicId },
+            { hasRead: true }
+        );
+        if (updatedNotifications) {
+            return {
+                message: "Successfully marked as read.",
+            };
         }
     }
 }

@@ -24,7 +24,6 @@ export class SocketGateway implements OnGatewayConnection {
     }
 
     emitNotification(clinicId: string, message: string): void {
-        console.log("HIIII");
         this.socketService.sendNotificationToClinic(
             clinicId,
             "notification",

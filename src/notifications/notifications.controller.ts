@@ -49,4 +49,9 @@ export class NotificationsController {
             request.clinic._id
         );
     }
+
+    @Patch("/mark-all-read")
+    async MarkAllAsRead(@Request() request: ClinicRequest) {
+        return this.notificationService.markAllAsRead(request.clinic._id);
+    }
 }

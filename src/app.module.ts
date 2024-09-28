@@ -17,7 +17,7 @@ import { AlertModule } from "./alert/alert.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { ScheduleModule } from "@nestjs/schedule";
 import { CronjobsModule } from "./cronjobs/cronjobs.module";
-import { BullModule } from "@nestjs/bullmq";
+//import { BullModule } from "@nestjs/bullmq";
 import { SocketModule } from "./socket/socket.module";
 
 @Module({
@@ -26,12 +26,12 @@ import { SocketModule } from "./socket/socket.module";
         MongooseModule.forRootAsync({
             useClass: MongooseConfigService,
         }),
-        BullModule.forRoot({
-            connection: {
-                host: "localhost",
-                port: 6379,
-            },
-        }),
+        // BullModule.forRoot({
+        //     connection: {
+        //         host: "localhost",
+        //         port: 6379,
+        //     },
+        // }),
         ScheduleModule.forRoot(),
         DoctorsModule,
         ClinicsModule,

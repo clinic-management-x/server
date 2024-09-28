@@ -19,7 +19,7 @@ export class CronjobsService {
         @InjectQueue("alert") private alertQueue: Queue
     ) {}
 
-    @Cron("0 * * * * *")
+    // @Cron("0 * * * * *")
     async checkMinimumAlertQuantity() {
         const clinics = await this.clinicModel.find().select("_id");
 
