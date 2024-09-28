@@ -16,6 +16,7 @@ import { GetBatchIdDto, GetOrdersDto } from "./dto/get-orders.dto";
 import { UpdateOrderItemDto } from "./dto/update-order-item.dto";
 import { Medicine } from "src/medicines/schemas/medicine.schema";
 import { BarCode } from "src/medicines/schemas/barcode.schema";
+import { ConfigService } from "@nestjs/config";
 
 const populateQuery = [
     {
@@ -41,7 +42,8 @@ export class OrdersService {
         private medicineModel: Model<Medicine>,
         @InjectModel(BarCode.name)
         private barcodeModel: Model<BarCode>,
-        private filesService: FilesService
+        private filesService: FilesService,
+        private configService: ConfigService
     ) {}
 
     async getAllOrders(
@@ -169,17 +171,15 @@ export class OrdersService {
             const order = new this.orderModel(data);
             await order.save({ session });
 
-            // const order = await this.orderModel.create(data, {
-            //     session: session,
-            // });
-
             if (order.hasAlreadyArrived) {
                 await this.increaseStockQuantity(orderItems, session);
             }
+
             await session.commitTransaction();
             session.endSession();
             return order.populate(populateQuery);
         } catch (error) {
+            console.log("error", error);
             await session.abortTransaction();
             session.endSession();
             throw new InternalServerErrorException(
