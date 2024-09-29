@@ -10,13 +10,14 @@ import { InjectModel } from "@nestjs/mongoose";
 import { ClientSession, Model } from "mongoose";
 import { Order, OrderDocument } from "./schemas/order.schema";
 import { OrderItem } from "./schemas/orderItemSchema";
-import { FilesService } from "src/files/files.service";
 import { UpdateOrderDto } from "./dto/update-order.dto";
 import { GetBatchIdDto, GetOrdersDto } from "./dto/get-orders.dto";
 import { UpdateOrderItemDto } from "./dto/update-order-item.dto";
 import { Medicine } from "src/medicines/schemas/medicine.schema";
 import { BarCode } from "src/medicines/schemas/barcode.schema";
-import { ConfigService } from "@nestjs/config";
+import { TelegramGroupInfo } from "src/telegram/schemas/telegram-info.schema";
+import { TelegramService } from "src/telegram/telegram.service";
+import * as dayjs from "dayjs";
 
 const populateQuery = [
     {
@@ -42,8 +43,9 @@ export class OrdersService {
         private medicineModel: Model<Medicine>,
         @InjectModel(BarCode.name)
         private barcodeModel: Model<BarCode>,
-        private filesService: FilesService,
-        private configService: ConfigService
+        @InjectModel(TelegramGroupInfo.name)
+        private TelegramModel: Model<TelegramGroupInfo>,
+        private telegramService: TelegramService
     ) {}
 
     async getAllOrders(
@@ -168,8 +170,36 @@ export class OrdersService {
                 orderItems: orderItems.map((item) => item._id),
                 clinic: clinicId,
             };
+
             const order = new this.orderModel(data);
             await order.save({ session });
+
+            const telegramInfo = await this.TelegramModel.findOne(
+                {
+                    supplierId: createOrderDto.supplier,
+                    clinicId,
+                },
+                null,
+                { session }
+            ).populate({
+                path: "supplierId",
+                select: "_id name",
+            });
+
+            if (telegramInfo) {
+                const message = `
+Hello ${(telegramInfo.supplierId as any).name},
+
+We would like to order:
+${createOrderDto.orderItems.map((orderitem) => ` ${orderitem.itemName.brandName} >> ${orderitem.quantity} ${orderitem.unit}`).join("\n")}
+
+Estimate Date Of Arrival: ${dayjs(order.estimateDate).format("DD/MM/YYYY")}
+`;
+                this.telegramService.sendMessageToUser(
+                    "" + telegramInfo.groupId,
+                    message
+                );
+            }
 
             if (order.hasAlreadyArrived) {
                 await this.increaseStockQuantity(orderItems, session);
