@@ -9,3 +9,5 @@ export const IS_PUBLIC_ROUTE: string = "isPublicRoute";
 export const IGNORE_CLINIC: string = "ignoreClinic";
 export const ACCESS_TOKEN_DURATION: string = "1h";
 export const REFRESH_TOKEN_DURATION: string = "30d";
+
+export const TELEGRAM_TOKEN: string = "TELEGRAM_TOKEN";

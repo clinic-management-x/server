@@ -47,15 +47,15 @@ export class AlertConsumer extends WorkerHost {
                             };
                         });
 
-                        // const notifications =
-                        //     await this.notificationModel.insertMany(payloads);
-                        // if (notifications) {
-                        const companyId = job.data._id;
-                        this.socketGateway.emitNotification(
-                            companyId,
-                            "New Notification"
-                        );
-                        // }
+                        const notifications =
+                            await this.notificationModel.insertMany(payloads);
+                        if (notifications && payloads.length) {
+                            const companyId = job.data._id;
+                            this.socketGateway.emitNotification(
+                                companyId,
+                                "New Notification"
+                            );
+                        }
                     }
 
                     break;
@@ -87,7 +87,16 @@ export class AlertConsumer extends WorkerHost {
                                 hasRead: false,
                             };
                         });
-                        // await this.notificationModel.insertMany(payloads);
+                        const notifications =
+                            await this.notificationModel.insertMany(payloads);
+                        if (notifications && payloads.length) {
+                            console.log("notifications", notifications);
+                            const companyId = job.data._id;
+                            this.socketGateway.emitNotification(
+                                companyId,
+                                "New Notification"
+                            );
+                        }
                     }
                     break;
 
@@ -118,7 +127,15 @@ export class AlertConsumer extends WorkerHost {
                                 hasRead: false,
                             };
                         });
-                        //await this.notificationModel.insertMany(payloads);
+                        const notifications =
+                            await this.notificationModel.insertMany(payloads);
+                        if (notifications && payloads.length) {
+                            const clinicId = job.data._id;
+                            this.socketGateway.emitNotification(
+                                clinicId,
+                                "New Notification"
+                            );
+                        }
                     }
                     break;
 
@@ -146,7 +163,15 @@ export class AlertConsumer extends WorkerHost {
                                 hasRead: false,
                             };
                         });
-                        // await this.notificationModel.insertMany(payloads);
+                        const notifications =
+                            await this.notificationModel.insertMany(payloads);
+                        if (notifications && payloads.length) {
+                            const companyId = job.data._id;
+                            this.socketGateway.emitNotification(
+                                companyId,
+                                "New Notification"
+                            );
+                        }
                     }
                     break;
 
@@ -174,8 +199,15 @@ export class AlertConsumer extends WorkerHost {
                                 hasRead: false,
                             };
                         });
-                        //await this.notificationModel.insertMany(payloads);
-                        console.log("DONE");
+                        const notifications =
+                            await this.notificationModel.insertMany(payloads);
+                        if (notifications && payloads.length) {
+                            const companyId = job.data._id;
+                            this.socketGateway.emitNotification(
+                                companyId,
+                                "New Notification"
+                            );
+                        }
                     }
                     break;
 
@@ -191,18 +223,18 @@ export class AlertConsumer extends WorkerHost {
 
     @OnWorkerEvent("active")
     onActive(job: Job) {
-        // console.log(
-        //     `Processing job ${job.id} of type ${job.name} with data ${job.data}...`
-        // );
+        console.log(
+            `Processing job ${job.id} of type ${job.name} with data ${job.data}...`
+        );
     }
 
     @OnWorkerEvent("completed")
     onCompleted(job: Job, result: any) {
-        //console.log(`Job ${job.id} completed with result:`, result);
+        console.log(`Job ${job.id} completed with result:`, result);
     }
 
     @OnWorkerEvent("failed")
     onFailed(job: Job, error: any) {
-        /// console.error(`Job ${job.id} failed with error:`, error);
+        console.error(`Job ${job.id} failed with error:`, error);
     }
 }

@@ -11,6 +11,12 @@ import { Order, OrderSchema } from "./schemas/order.schema";
 import { OrderItem, OrderItemSchema } from "./schemas/orderItemSchema";
 import { BarCode, BarCodeSchema } from "src/medicines/schemas/barcode.schema";
 
+import {
+    TelegramGroupInfo,
+    TelegramInfoSchema,
+} from "src/telegram/schemas/telegram-info.schema";
+import { TelegramService } from "src/telegram/telegram.service";
+
 @Module({
     imports: [
         MongooseModule.forFeature([
@@ -21,10 +27,14 @@ import { BarCode, BarCodeSchema } from "src/medicines/schemas/barcode.schema";
             },
             { name: Medicine.name, schema: MedicineSchema },
             { name: BarCode.name, schema: BarCodeSchema },
+            {
+                name: TelegramGroupInfo.name,
+                schema: TelegramInfoSchema,
+            },
         ]),
         FilesModule,
     ],
     controllers: [OrdersController],
-    providers: [OrdersService],
+    providers: [OrdersService, TelegramService],
 })
 export class OrdersModule {}

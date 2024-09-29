@@ -22,11 +22,8 @@ export class SocketService {
         event: string,
         message: any
     ): void {
-        console.log("event", event);
         this.connectedClients.forEach((client) => {
-            console.log("client", client.clinicId, clinicId);
             if (client.clinicId === clinicId) {
-                console.log("Hii");
                 client.socket.emit(event, message);
             }
         });
