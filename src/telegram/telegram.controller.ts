@@ -28,6 +28,12 @@ export class TelegramController {
         return this.telegramService.createTelegramInfo(data);
     }
 
+    @Post("/webhook")
+    handleWebhook(@Body() update: any) {
+        console.log("update", update);
+        this.telegramService.onReceiveMessage(update.message);
+    }
+
     @Patch("/:_id")
     async update(
         @Param() { _id }: GetTelegramInfoDto,

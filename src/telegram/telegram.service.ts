@@ -18,14 +18,23 @@ export class TelegramService {
         @InjectModel(TelegramGroupInfo.name)
         private telegramInfoModel: Model<TelegramGroupInfo>
     ) {
-        this.bot = new TelegramBot(process.env.TELEGRAM_TOKEN, {
-            polling: true,
-        });
+        // this.bot = new TelegramBot(process.env.TELEGRAM_TOKEN, {
+        //     polling: true,
+        // });
 
-        this.bot.on("message", this.onReceiveMessage);
+        // this.bot.on("message", this.onReceiveMessage);
+        if (!this.bot) {
+            this.bot = new TelegramBot(process.env.TELEGRAM_TOKEN);
+
+            // Set your server's URL for Telegram to send updates to
+            this.bot.setWebHook(`${process.env.SERVER_URL}/telegram/webhook`);
+
+            this.bot.on("message", this.onReceiveMessage);
+        }
     }
 
     onReceiveMessage = (msg: any) => {
+        console.log("MESSAGE", msg);
         if (msg.text === "/groupId") {
             this.sendMessageToUser(msg.chat.id, `chatId: ${msg.chat.id}`);
         }
