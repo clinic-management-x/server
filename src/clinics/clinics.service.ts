@@ -8,6 +8,7 @@ import { Clinic, ClinicDocument } from "./schemas/clinic.schema";
 import { Model } from "mongoose";
 import { ObjectId } from "src/shared/typings";
 import { CreateClinicDto } from "./dto/create-clinic.dto";
+import { UpdateClinicDto } from "./dto/update-clinic.dto";
 
 @Injectable()
 export class ClinicsService {
@@ -35,5 +36,17 @@ export class ClinicsService {
 
         const clinic = new this.clinicModel({ ...data, user: userId });
         return clinic.save();
+    }
+
+    async updateClinic(data: UpdateClinicDto, clinicId: ObjectId) {
+        const clinic = await this.clinicModel.findById(clinicId);
+        if (!clinic) throw new NotFoundException("Clinic not found");
+
+        Object.keys(data).forEach((key) => {
+            clinic[key] = data[key];
+        });
+
+        const updatedClinic = await clinic.save();
+        return updatedClinic;
     }
 }

@@ -15,7 +15,20 @@ export class Clinic {
     })
     user: Types.ObjectId;
 
-    // TODO
+    @Prop({
+        default: false,
+    })
+    enableTelegram: boolean;
+
+    @Prop({
+        default: false,
+    })
+    enableSMS: boolean;
+
+    @Prop({
+        default: false,
+    })
+    enableViber: boolean;
 }
 
 export const ClinicSchema = SchemaFactory.createForClass(Clinic);
