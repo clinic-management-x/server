@@ -20,6 +20,7 @@ import { CronjobsModule } from "./cronjobs/cronjobs.module";
 //import { BullModule } from "@nestjs/bullmq";
 import { SocketModule } from "./socket/socket.module";
 import { TelegramModule } from "./telegram/telegram.module";
+import { PatientsModule } from "./patients/patients.module";
 
 @Module({
     imports: [
@@ -48,6 +49,7 @@ import { TelegramModule } from "./telegram/telegram.module";
         CronjobsModule,
         SocketModule,
         TelegramModule,
+        PatientsModule,
     ],
     controllers: [AppController],
     providers: [AppService],
