@@ -50,10 +50,15 @@ export class Patient {
     occupation: string;
 
     @Prop({ isRequired: true })
-    emegencyMobileContact: string;
+    emergencyMobileContact: string;
 
-    @Prop({ isRequired: false, type: SchemaTypes.ObjectId, ref: Doctor.name })
-    preferredDoctor: Doctor;
+    @Prop({
+        isRequired: false,
+        type: SchemaTypes.ObjectId,
+        ref: Doctor.name,
+        default: null,
+    })
+    preferredDoctor?: Doctor;
 
     @Prop({ type: SchemaTypes.ObjectId, ref: Clinic.name })
     clinic: Clinic;
