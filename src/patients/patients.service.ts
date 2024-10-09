@@ -72,6 +72,14 @@ export class PatientsService {
             if (!patient) {
                 throw new NotFoundException("Patient not found.");
             }
+            if (patient.qrCodeUrl) {
+                const presignedUrl = await this.filesService.createPresignedUrl(
+                    patient.qrCodeUrl
+                );
+
+                patient.qrCodeUrl = presignedUrl;
+            }
+
             return patient;
         } catch (error) {
             console.log("error", error);

@@ -7,7 +7,6 @@ import {
     IsPhoneNumber,
     IsString,
 } from "class-validator";
-import { IsObjectId } from "class-validator-mongo-object-id";
 import { Gender } from "src/shared/shared.enum";
 
 export class CreatePatientDto {
@@ -54,11 +53,10 @@ export class CreatePatientDto {
 
     @IsNotEmpty()
     @IsString()
-    //@IsPhoneNumber()
+    @IsPhoneNumber()
     emergencyMobileContact: string;
 
     @IsOptional()
     @IsString()
-    @IsObjectId({ message: "Not a valid object id" })
     preferredDoctor?: string;
 }
