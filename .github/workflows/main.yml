@@ -9,12 +9,14 @@ jobs:
   run_test_job:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
       - name: executing remote ssh commands using ssh key
         uses: appleboy/ssh-action@v1.1.0
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_SECRET_KEY }}
-          script: ./clinic.sh
+          script: "cd /home/ubuntu && ./clinic.sh"
 
 
