@@ -1,0 +1,19 @@
+name: Setup Nest.js server
+on:
+ push:
+  branches:
+    -main
+
+jobs:
+  run_test_job:
+     runs-on: ubuntu-latest
+     steps:
+      - name: executing remote ssh commands using ssh key
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+           host: ${{ secrets.HOST }}
+           username: ${{ secrets.USER_NAME }}
+           key: ${{ secrets.SSH_SECRET_KEY }}
+           script: ./clinic.sh
+  
+
