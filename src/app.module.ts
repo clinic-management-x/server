@@ -17,10 +17,10 @@ import { AlertModule } from "./alert/alert.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { ScheduleModule } from "@nestjs/schedule";
 import { CronjobsModule } from "./cronjobs/cronjobs.module";
-//import { BullModule } from "@nestjs/bullmq";
 import { SocketModule } from "./socket/socket.module";
 import { TelegramModule } from "./telegram/telegram.module";
 import { PatientsModule } from "./patients/patients.module";
+import { AppointmentsModule } from "./appointments/appointments.module";
 
 @Module({
     imports: [
@@ -28,12 +28,6 @@ import { PatientsModule } from "./patients/patients.module";
         MongooseModule.forRootAsync({
             useClass: MongooseConfigService,
         }),
-        // BullModule.forRoot({
-        //     connection: {
-        //         host: "localhost",
-        //         port: 6379,
-        //     },
-        // }),
         ScheduleModule.forRoot(),
         DoctorsModule,
         ClinicsModule,
@@ -50,6 +44,7 @@ import { PatientsModule } from "./patients/patients.module";
         SocketModule,
         TelegramModule,
         PatientsModule,
+        AppointmentsModule,
     ],
     controllers: [AppController],
     providers: [AppService],

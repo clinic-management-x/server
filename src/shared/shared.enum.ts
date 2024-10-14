@@ -78,3 +78,15 @@ export enum NotificationType {
     MEDICINE = "MEDICINE",
     ORDER = "ORDER",
 }
+
+export enum Necessity {
+    CONSULTATION = "consultation",
+    CHECK_UP = "check_up",
+    DISEASE = "disease",
+}
+
+export enum AppointmentStatus {
+    PENDING = "Pending",
+    IN_PROGRESS = "In Progress",
+    SUCCESS = "Success",
+}
