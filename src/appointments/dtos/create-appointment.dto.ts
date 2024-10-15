@@ -19,7 +19,15 @@ export class CreateAppointmentDto {
 
     @IsNotEmpty()
     @IsDateString()
-    appointmentDateAndTime: string;
+    appointmentDate: string;
+
+    @IsNotEmpty()
+    @IsDateString()
+    appointmentStartTime: string;
+
+    @IsNotEmpty()
+    @IsDateString()
+    appointmentEndTime: string;
 
     @IsNotEmpty()
     @IsEnum(Necessity)

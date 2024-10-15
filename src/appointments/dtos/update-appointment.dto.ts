@@ -12,7 +12,15 @@ export class UpdateAppointmentDto {
 
     @IsOptional()
     @IsDateString()
-    appointmentDateAndTime?: string;
+    appointmentDate: string;
+
+    @IsOptional()
+    @IsDateString()
+    appointmentStartTime: string;
+
+    @IsOptional()
+    @IsDateString()
+    appointmentEndTime: string;
 
     @IsOptional()
     @IsEnum(Necessity)

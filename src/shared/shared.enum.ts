@@ -80,9 +80,9 @@ export enum NotificationType {
 }
 
 export enum Necessity {
-    CONSULTATION = "consultation",
-    CHECK_UP = "check_up",
-    DISEASE = "disease",
+    CONSULTATION = "Consultation",
+    CHECK_UP = "Check-Up",
+    DISEASE = "Disease",
 }
 
 export enum AppointmentStatus {
