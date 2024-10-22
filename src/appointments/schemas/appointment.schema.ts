@@ -14,7 +14,13 @@ export class Appointment {
     doctor: Doctor;
 
     @Prop({ required: true })
-    appointmentDateAndTime: Date;
+    appointmentDate: Date;
+
+    @Prop({ required: true })
+    appointmentStartTime: Date;
+
+    @Prop({ required: true })
+    appointmentEndTime: Date;
 
     @Prop({ required: true, enum: Necessity })
     necessity: Necessity;

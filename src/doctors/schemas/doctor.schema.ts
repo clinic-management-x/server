@@ -30,6 +30,9 @@ export class Doctor {
     @Prop({ required: true })
     doctorFee: number; // ?Per consultation
 
+    @Prop({ required: false, default: 20 })
+    duration: number;
+
     @Prop({ type: SchemaTypes.ObjectId, ref: Clinic.name })
     clinic: Types.ObjectId;
 }

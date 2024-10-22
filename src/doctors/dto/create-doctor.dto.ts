@@ -50,6 +50,11 @@ export class CreateDoctorDto {
     @Min(0)
     doctorFee: number;
 
+    @IsNumber()
+    @IsNotEmpty()
+    @Min(15)
+    duration: number;
+
     @IsOptional()
     @IsUrl({})
     avatarUrl?: string;
