@@ -46,6 +46,11 @@ export class UpdateDoctorDetailsDto {
     @Min(0)
     doctorFee?: number;
 
+    @IsNumber()
+    @IsOptional()
+    @Min(0)
+    duration?: number;
+
     @IsOptional()
     @IsString()
     @ValidateIf((e) => e === "")

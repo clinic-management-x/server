@@ -8,6 +8,13 @@ export class UpdateAppointmentDto {
     @IsObjectId({
         message: "not a valid object ID",
     })
+    patient?: string;
+
+    @IsOptional()
+    @IsString()
+    @IsObjectId({
+        message: "not a valid object ID",
+    })
     doctor?: string;
 
     @IsOptional()

@@ -11,6 +11,8 @@ import { ObjectId } from "src/shared/typings";
 import { UpdateAppointmentDto } from "./dtos/update-appointment.dto";
 import { GetMultipleObjectsDto } from "src/shared/dto/get-info.dto";
 import { FilesService } from "src/files/files.service";
+import { GetBookedAppointmentDto } from "./dtos/get-booked-appointment.dto";
+import * as dayjs from "dayjs";
 
 @Injectable()
 export class AppointmentsService {
@@ -49,11 +51,36 @@ export class AppointmentsService {
                       },
                       { $unwind: "$doctor" },
                       {
+                          $lookup: {
+                              from: "specialities",
+                              localField: "doctor.speciality",
+                              foreignField: "_id",
+                              as: "doctor.speciality",
+                          },
+                      },
+                      { $unwind: "$doctor.speciality" },
+                      {
                           $match: {
-                              "patient.patientId": {
-                                  $regex: query.search,
-                                  //$options: "i",
-                              },
+                              $or: [
+                                  {
+                                      "patient.patientId": {
+                                          $regex: query.search,
+                                          $options: "i",
+                                      },
+                                  },
+                                  {
+                                      "patient.name": {
+                                          $regex: query.search,
+                                          $options: "i",
+                                      },
+                                  },
+                                  {
+                                      "doctor.name": {
+                                          $regex: query.search,
+                                          $options: "i",
+                                      },
+                                  },
+                              ],
                           },
                       },
                       {
@@ -65,6 +92,8 @@ export class AppointmentsService {
                               "doctor._id": 1,
                               "doctor.name": 1,
                               "doctor.avatarUrl": 1,
+                              "doctor.speciality._id": 1,
+                              "doctor.speciality.name": 1,
                               appointmentDateAndTime: 1,
                               necessity: 1,
                               status: 1,
@@ -89,6 +118,10 @@ export class AppointmentsService {
                         {
                             path: "doctor",
                             select: "_id name avatarUrl",
+                            populate: {
+                                path: "speciality",
+                                select: "_id name",
+                            },
                         },
                     ])
                     .skip(query.skip)
@@ -131,6 +164,28 @@ export class AppointmentsService {
             console.log("error", error);
             throw new InternalServerErrorException("Something went wrong.");
         }
+    }
+
+    async getBookedAppointments(
+        data: GetBookedAppointmentDto,
+        clinicId: ObjectId
+    ) {
+        const appointmentDate = dayjs(data.appointmentDate);
+        const startOfDay = appointmentDate.startOf("day").toISOString();
+        const endOfDay = appointmentDate.endOf("day").toISOString();
+
+        const bookedAppointments = await this.appointmentModel.find({
+            clinicId: clinicId,
+            _id: {
+                $ne: data._id,
+            },
+            doctor: data.doctor,
+            appointmentDate: {
+                $gte: startOfDay,
+                $lte: endOfDay,
+            },
+        });
+        return bookedAppointments;
     }
 
     async createAppointment(

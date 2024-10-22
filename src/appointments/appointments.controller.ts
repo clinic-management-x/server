@@ -17,6 +17,7 @@ import {
 import { ClinicRequest } from "src/shared/typings";
 import { CreateAppointmentDto } from "./dtos/create-appointment.dto";
 import { UpdateAppointmentDto } from "./dtos/update-appointment.dto";
+import { GetBookedAppointmentDto } from "./dtos/get-booked-appointment.dto";
 
 @Controller("appointments")
 export class AppointmentsController {
@@ -28,6 +29,17 @@ export class AppointmentsController {
         @Request() request: ClinicRequest
     ) {
         return this.appointmentService.getAppointments(
+            query,
+            request.clinic._id
+        );
+    }
+
+    @Get("/booked-appointments")
+    async GetBookedAppointments(
+        @Query() query: GetBookedAppointmentDto,
+        @Request() request: ClinicRequest
+    ) {
+        return this.appointmentService.getBookedAppointments(
             query,
             request.clinic._id
         );
