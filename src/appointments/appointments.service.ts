@@ -9,11 +9,12 @@ import mongoose, { Model } from "mongoose";
 import { CreateAppointmentDto } from "./dtos/create-appointment.dto";
 import { ObjectId } from "src/shared/typings";
 import { UpdateAppointmentDto } from "./dtos/update-appointment.dto";
-import { GetMultipleObjectsDto } from "src/shared/dto/get-info.dto";
 import { FilesService } from "src/files/files.service";
 import { GetBookedAppointmentDto } from "./dtos/get-booked-appointment.dto";
 import * as dayjs from "dayjs";
+import { GetAppointmentsDto } from "./dtos/get-appointments.dto";
 
+const oneHourAgo = new Date();
 @Injectable()
 export class AppointmentsService {
     constructor(
@@ -22,15 +23,47 @@ export class AppointmentsService {
         private filesService: FilesService
     ) {}
 
-    async getAppointments(query: GetMultipleObjectsDto, clinicId: ObjectId) {
+    async getAppointments(query: GetAppointmentsDto, clinicId: ObjectId) {
         try {
+            const {
+                search,
+                limit,
+                skip,
+                start,
+                end,
+                status,
+                nearest,
+                necessity,
+            } = query;
+
+            let baseFilter = { clinicId: clinicId };
+
+            const sortQuery: { [key: string]: 1 | -1 } =
+                nearest === "true"
+                    ? { appointmentDate: 1 }
+                    : {
+                          createdAt: -1,
+                      };
+
+            baseFilter = {
+                ...baseFilter,
+                ...(status && { status }),
+                ...(start &&
+                    end && {
+                        appointmentDate: {
+                            $gte: start,
+                            $lte: end,
+                        },
+                    }),
+                ...(nearest && { appointmentStartTime: { $gte: oneHourAgo } }),
+                ...(necessity && { necessity }),
+            };
+
             const pouplateFilterQuery = [];
             const searchData = query.search
                 ? await this.appointmentModel.aggregate([
                       {
-                          $match: {
-                              clinicId: clinicId,
-                          },
+                          $match: baseFilter,
                       },
                       {
                           $lookup: {
@@ -64,24 +97,27 @@ export class AppointmentsService {
                               $or: [
                                   {
                                       "patient.patientId": {
-                                          $regex: query.search,
+                                          $regex: search,
                                           $options: "i",
                                       },
                                   },
                                   {
                                       "patient.name": {
-                                          $regex: query.search,
+                                          $regex: search,
                                           $options: "i",
                                       },
                                   },
                                   {
                                       "doctor.name": {
-                                          $regex: query.search,
+                                          $regex: search,
                                           $options: "i",
                                       },
                                   },
                               ],
                           },
+                      },
+                      {
+                          $sort: sortQuery,
                       },
                       {
                           $project: {
@@ -94,7 +130,9 @@ export class AppointmentsService {
                               "doctor.avatarUrl": 1,
                               "doctor.speciality._id": 1,
                               "doctor.speciality.name": 1,
-                              appointmentDateAndTime: 1,
+                              appointmentDate: 1,
+                              appointmentStartTime: 1,
+                              appointmentEndTime: 1,
                               necessity: 1,
                               status: 1,
                               clinicId: 1,
@@ -108,7 +146,7 @@ export class AppointmentsService {
 
             const [data, count] = await Promise.all([
                 this.appointmentModel
-                    .find({ clinicId })
+                    .find(baseFilter)
                     .populate([
                         {
                             path: "patient",
@@ -124,15 +162,16 @@ export class AppointmentsService {
                             },
                         },
                     ])
-                    .skip(query.skip)
-                    .limit(query.limit)
+                    .sort(sortQuery)
+                    .skip(skip)
+                    .limit(limit)
                     .exec(),
                 this.appointmentModel
-                    .find({ clinicId })
+                    .find(baseFilter)
                     .populate(pouplateFilterQuery)
                     .countDocuments(),
             ]);
-            const newData = query.search
+            const newData = search
                 ? await Promise.all(
                       searchData.map(async (appointment) => {
                           if (appointment.doctor.avatarUrl) {
@@ -159,7 +198,7 @@ export class AppointmentsService {
                           return appointment;
                       })
                   );
-            return { data: newData, count: query.search ? 1 : count };
+            return { data: newData, count: search ? 1 : count };
         } catch (error) {
             console.log("error", error);
             throw new InternalServerErrorException("Something went wrong.");

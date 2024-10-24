@@ -10,14 +10,12 @@ import {
     Request,
 } from "@nestjs/common";
 import { AppointmentsService } from "./appointments.service";
-import {
-    GetMultipleObjectsDto,
-    GetSingleObjectDto,
-} from "src/shared/dto/get-info.dto";
+import { GetSingleObjectDto } from "src/shared/dto/get-info.dto";
 import { ClinicRequest } from "src/shared/typings";
 import { CreateAppointmentDto } from "./dtos/create-appointment.dto";
 import { UpdateAppointmentDto } from "./dtos/update-appointment.dto";
 import { GetBookedAppointmentDto } from "./dtos/get-booked-appointment.dto";
+import { GetAppointmentsDto } from "./dtos/get-appointments.dto";
 
 @Controller("appointments")
 export class AppointmentsController {
@@ -25,7 +23,7 @@ export class AppointmentsController {
 
     @Get()
     async GetAll(
-        @Query() query: GetMultipleObjectsDto,
+        @Query() query: GetAppointmentsDto,
         @Request() request: ClinicRequest
     ) {
         return this.appointmentService.getAppointments(
