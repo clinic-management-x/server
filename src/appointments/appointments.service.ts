@@ -12,7 +12,12 @@ import { UpdateAppointmentDto } from "./dtos/update-appointment.dto";
 import { FilesService } from "src/files/files.service";
 import { GetBookedAppointmentDto } from "./dtos/get-booked-appointment.dto";
 import * as dayjs from "dayjs";
-import { GetAppointmentsDto } from "./dtos/get-appointments.dto";
+import {
+    GetAppointmentsByDateDto,
+    GetAppointmentsDto,
+} from "./dtos/get-appointments.dto";
+import { Doctor } from "src/doctors/schemas/doctor.schema";
+import { Schedule } from "src/doctors/schemas/schedule.schema";
 
 const oneHourAgo = new Date();
 @Injectable()
@@ -20,6 +25,10 @@ export class AppointmentsService {
     constructor(
         @InjectModel(Appointment.name)
         private appointmentModel: Model<Appointment>,
+        @InjectModel(Doctor.name)
+        private doctorModel: Model<Doctor>,
+        @InjectModel(Schedule.name)
+        private scheduleModel: Model<Schedule>,
         private filesService: FilesService
     ) {}
 
@@ -199,6 +208,67 @@ export class AppointmentsService {
                       })
                   );
             return { data: newData, count: search ? 1 : count };
+        } catch (error) {
+            console.log("error", error);
+            throw new InternalServerErrorException("Something went wrong.");
+        }
+    }
+
+    async getAppointmentsByDate(
+        data: GetAppointmentsByDateDto,
+        clinicId: ObjectId
+    ) {
+        try {
+            const { date, search } = data;
+            const start = dayjs(date).startOf("date").toISOString();
+            const end = dayjs(date).endOf("date").toISOString();
+
+            const filter = {
+                clinic: clinicId,
+                ...(search && { name: { $regex: search, $options: "i" } }),
+            };
+
+            const doctors = await this.doctorModel
+                .find(filter)
+                .populate("speciality");
+
+            const modifiedDoctors = await Promise.all(
+                doctors.map(async (doctor) => {
+                    const appointments = await this.appointmentModel
+                        .find({
+                            doctor: doctor._id,
+                            appointmentDate: {
+                                $gte: new Date(start),
+                                $lte: new Date(end),
+                            },
+                            clinicId: clinicId,
+                        })
+                        .populate([
+                            {
+                                path: "patient",
+
+                                select: "_id name patientId",
+                            },
+                        ]);
+                    const schedules = await this.scheduleModel
+                        .find({ doctor })
+                        .exec();
+                    if (doctor.avatarUrl) {
+                        const presignedUrl =
+                            await this.filesService.createPresignedUrl(
+                                doctor.avatarUrl
+                            );
+
+                        doctor.avatarUrl = presignedUrl;
+                    }
+                    return {
+                        ...doctor.toObject(),
+                        appointments: appointments,
+                        schedules: schedules,
+                    };
+                })
+            );
+            return modifiedDoctors;
         } catch (error) {
             console.log("error", error);
             throw new InternalServerErrorException("Something went wrong.");

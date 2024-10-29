@@ -21,6 +21,7 @@ import { SocketModule } from "./socket/socket.module";
 import { TelegramModule } from "./telegram/telegram.module";
 import { PatientsModule } from "./patients/patients.module";
 import { AppointmentsModule } from "./appointments/appointments.module";
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
     imports: [
@@ -45,6 +46,7 @@ import { AppointmentsModule } from "./appointments/appointments.module";
         TelegramModule,
         PatientsModule,
         AppointmentsModule,
+        AnalyticsModule,
     ],
     controllers: [AppController],
     providers: [AppService],
