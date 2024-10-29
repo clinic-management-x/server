@@ -15,7 +15,10 @@ import { ClinicRequest } from "src/shared/typings";
 import { CreateAppointmentDto } from "./dtos/create-appointment.dto";
 import { UpdateAppointmentDto } from "./dtos/update-appointment.dto";
 import { GetBookedAppointmentDto } from "./dtos/get-booked-appointment.dto";
-import { GetAppointmentsDto } from "./dtos/get-appointments.dto";
+import {
+    GetAppointmentsByDateDto,
+    GetAppointmentsDto,
+} from "./dtos/get-appointments.dto";
 
 @Controller("appointments")
 export class AppointmentsController {
@@ -27,6 +30,17 @@ export class AppointmentsController {
         @Request() request: ClinicRequest
     ) {
         return this.appointmentService.getAppointments(
+            query,
+            request.clinic._id
+        );
+    }
+
+    @Get("/datefilter")
+    async GetAppoitmentsByDate(
+        @Query() query: GetAppointmentsByDateDto,
+        @Request() request: ClinicRequest
+    ) {
+        return this.appointmentService.getAppointmentsByDate(
             query,
             request.clinic._id
         );
