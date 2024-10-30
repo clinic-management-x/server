@@ -7,6 +7,8 @@ import { Order } from "src/orders/schemas/order.schema";
 import { Supplier } from "src/suppliers/schemas/supplier.schema";
 import { GetAnalyticsDto } from "./dtos/get-analytics.dto";
 import { ObjectId } from "src/shared/typings";
+import * as dayjs from "dayjs";
+import { months } from "src/shared/months";
 
 @Injectable()
 export class AnalyticsService {
@@ -23,6 +25,10 @@ export class AnalyticsService {
 
     getAnalyticsData = async (data: GetAnalyticsDto, clinicId: ObjectId) => {
         try {
+            const isYear =
+                dayjs(data.start).get("month") === 0 &&
+                dayjs(data.end).get("month") === 11;
+
             const [
                 doctorsByAppointmentData,
                 appointmentByDateData,
@@ -69,7 +75,12 @@ export class AnalyticsService {
                     },
                     {
                         $group: {
-                            _id: "$appointmentDate",
+                            _id: {
+                                $dateToString: {
+                                    format: isYear ? "%b" : "%d %b",
+                                    date: "$appointmentDate",
+                                },
+                            },
                             count: { $sum: 1 },
                         },
                     },
@@ -114,7 +125,12 @@ export class AnalyticsService {
                     },
                     {
                         $group: {
-                            _id: "$createdAt",
+                            _id: {
+                                $dateToString: {
+                                    format: isYear ? "%b" : "%d %b",
+                                    date: "$createdAt",
+                                },
+                            },
                             count: { $sum: 1 },
                         },
                     },
@@ -125,20 +141,27 @@ export class AnalyticsService {
                 dataArr: doctorsByAppointmentData.map((idata) => idata.count),
             };
 
-            const appointmentByDate = {
-                labels: appointmentByDateData.map((idata) => idata._id),
-                dataArr: appointmentByDateData.map((idata) => idata.count),
-            };
+            const month = dayjs(data.start).get("month");
+            const totalDays = dayjs(data.start).daysInMonth();
+
+            const appointmentByDate = this.generateTimeArray(
+                appointmentByDateData,
+                month,
+                totalDays,
+                isYear
+            );
 
             const suppliersByOrder = {
                 labels: supplierByOrderData.map((idata) => idata._id),
                 dataArr: supplierByOrderData.map((idata) => idata.count),
             };
 
-            const ordersByDate = {
-                labels: orderByDateData.map((idata) => idata._id),
-                dataArr: orderByDateData.map((idata) => idata.count),
-            };
+            const ordersByDate = this.generateTimeArray(
+                orderByDateData,
+                month,
+                totalDays,
+                isYear
+            );
 
             return {
                 doctorsByAppointment,
@@ -151,5 +174,44 @@ export class AnalyticsService {
                 "Something went wrong on the server side"
             );
         }
+    };
+
+    generateTimeArray = (
+        data: { _id: string; count: number }[],
+        month: number,
+        totalDays: number,
+        isYear: boolean
+    ) => {
+        const modifiedArr = isYear
+            ? months.map((month) => {
+                  const hasAppointment = data.find(
+                      (idata) => idata._id === month
+                  );
+                  return {
+                      _id: month,
+                      count: hasAppointment ? hasAppointment.count : 0,
+                  };
+              })
+            : Array.from({
+                  length: totalDays,
+              }).map((day, index) => {
+                  const current = dayjs()
+                      .set("date", index + 1)
+                      .set("month", month)
+                      .format("DD MMM");
+                  const hasAppointment = data.find(
+                      (idata) => idata._id === current
+                  );
+                  return {
+                      _id: current,
+                      count: hasAppointment ? hasAppointment.count : 0,
+                  };
+              });
+
+        const result = {
+            labels: modifiedArr.map((idata) => idata._id),
+            dataArr: modifiedArr.map((idata) => idata.count),
+        };
+        return result;
     };
 }

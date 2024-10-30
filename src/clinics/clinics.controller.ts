@@ -12,7 +12,10 @@ import { CreateClinicDto } from "./dto/create-clinic.dto";
 import { ClinicDocument } from "./schemas/clinic.schema";
 import { IGNORE_CLINIC } from "src/shared/constants";
 import { ClinicRequest, UserRequest } from "src/shared/typings";
-import { UpdateClinicDto } from "./dto/update-clinic.dto";
+import {
+    UpdateClinicDto,
+    UpdateClinicPasswordDto,
+} from "./dto/update-clinic.dto";
 
 @Controller("clinics")
 export class ClinicsController {
@@ -42,6 +45,17 @@ export class ClinicsController {
     ) {
         return this.clinicsService.updateClinic(
             updateClinicDto,
+            request.clinic._id
+        );
+    }
+
+    @Patch("/update-password")
+    async updateClinicPassword(
+        @Body() updateDto: UpdateClinicPasswordDto,
+        @Request() request: ClinicRequest
+    ) {
+        return this.clinicsService.updateClinicPassword(
+            updateDto,
             request.clinic._id
         );
     }
