@@ -1,4 +1,5 @@
 import {
+    BadRequestException,
     ConflictException,
     Injectable,
     NotFoundException,
@@ -8,11 +9,18 @@ import { Clinic, ClinicDocument } from "./schemas/clinic.schema";
 import { Model } from "mongoose";
 import { ObjectId } from "src/shared/typings";
 import { CreateClinicDto } from "./dto/create-clinic.dto";
-import { UpdateClinicDto } from "./dto/update-clinic.dto";
-
+import {
+    UpdateClinicDto,
+    UpdateClinicPasswordDto,
+} from "./dto/update-clinic.dto";
+import { User } from "src/users/schemas/user.schema";
+import * as bcrypt from "bcrypt";
 @Injectable()
 export class ClinicsService {
-    constructor(@InjectModel(Clinic.name) private clinicModel: Model<Clinic>) {}
+    constructor(
+        @InjectModel(Clinic.name) private clinicModel: Model<Clinic>,
+        @InjectModel(User.name) private userModel: Model<User>
+    ) {}
 
     async get(_id: ObjectId): Promise<ClinicDocument> {
         const clinic = await this.clinicModel.findById(_id);
@@ -48,5 +56,28 @@ export class ClinicsService {
 
         const updatedClinic = await clinic.save();
         return updatedClinic;
+    }
+
+    async updateClinicPassword(
+        data: UpdateClinicPasswordDto,
+        clinicId: ObjectId
+    ) {
+        const clinic = await this.clinicModel.findById(clinicId);
+        if (!clinic) throw new NotFoundException("Clinic not found");
+        const user = await this.userModel.findOne({ _id: clinic.user });
+        if (!user) {
+            throw new NotFoundException("User not found.");
+        }
+        if (!(await bcrypt.compare(data.password, user.password)))
+            throw new BadRequestException("Password incorrect.");
+
+        const newPassword = await bcrypt.hash(
+            data.newPassword,
+            await bcrypt.genSalt()
+        );
+        await this.userModel.findByIdAndUpdate(user._id, {
+            password: newPassword,
+        });
+        return { message: "Successfully updated." };
     }
 }

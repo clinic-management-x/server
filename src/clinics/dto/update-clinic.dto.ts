@@ -1,4 +1,4 @@
-import { IsBoolean, IsOptional, IsString } from "class-validator";
+import { IsBoolean, IsNotEmpty, IsOptional, IsString } from "class-validator";
 
 export class UpdateClinicDto {
     @IsString()
@@ -16,4 +16,14 @@ export class UpdateClinicDto {
     @IsBoolean()
     @IsOptional()
     enableSMS?: boolean;
+}
+
+export class UpdateClinicPasswordDto {
+    @IsNotEmpty()
+    @IsString()
+    password?: string;
+
+    @IsNotEmpty()
+    @IsString()
+    newPassword?: string;
 }
