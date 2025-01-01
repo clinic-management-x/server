@@ -1,7 +1,7 @@
 version: '3'
 services:
   app:
-    build: .
+    image: rachel144/clinicserver:latest
     container_name: clinic-server-container
     ports:
       - "8000:8000"

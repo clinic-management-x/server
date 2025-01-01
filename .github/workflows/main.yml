@@ -39,5 +39,37 @@ jobs:
            - name: Push Docker Image
              run: docker push $IMAGE_NAME:latest
 
+    deploy:
+        runs-on: ubuntu-latest
+        needs: build
+        steps:
+            - name: Checkout node
+              uses: actions/checkout@v4
+            
+            - name: Create SSH key
+              run: |
+                echo "$SSH_PRIVATE_KEY" > private.key
+                chmod 600 private.key
+                eval `ssh-agent -s`
+                ssh-add private.key
+                mkdir -p ~/.ssh
+                touch ~/.ssh/known_hosts
+                chmod 644 ~/.ssh/known_hosts
+                ssh-keyscan $SSH_HOST >> ~/.ssh/known_hosts
+
+            - name: Install ansible
+              run: |
+                sudo apt update
+                sudo apt install -y ansible
+
+            
+            - name: Create ansible inventory
+              run: |
+                echo "server ansible_host=$SSH_HOST ansible_user=$SSH_USERNAME ansible_ssh_private_key_file=private.key" >> inventory
+
+            - name: Install Ansible roles
+              run: |
+                ansible-galaxy install geerlingguy.swap
+
         
 
