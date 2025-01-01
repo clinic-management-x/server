@@ -43,16 +43,18 @@ export class AuthService {
         }
 
         if (!user) throw new NotFoundException("User not found");
+
         if (!(await bcrypt.compare(providedPass, user.password)))
             throw new UnauthorizedException();
 
         const clinic = await this.clinicsService.getClinicByUserId(user._id);
-        const clinicId = clinic._id;
+        const clinicId = clinic?._id ? clinic?._id : null;
 
         const { accessToken, refreshToken, nonce } =
             await this.generateTokenPair(user);
         await this.usersService.clearExpiredSessionsForUser(user._id);
         await this.usersService.createSessionForUser(user._id, nonce);
+
         return { accessToken, refreshToken, clinicId };
     }
 

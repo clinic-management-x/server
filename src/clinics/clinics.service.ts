@@ -30,7 +30,7 @@ export class ClinicsService {
 
     async getClinicByUserId(userId: ObjectId): Promise<ClinicDocument> {
         const clinic = await this.clinicModel.findOne({ user: userId }).exec();
-        if (!clinic) throw new NotFoundException("Clinic not found");
+        //if (!clinic) throw new NotFoundException("Clinic not found");
         return clinic;
     }
 
