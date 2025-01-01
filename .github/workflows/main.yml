@@ -1,22 +1,43 @@
-name: Setup Nest.js server
+name: Build and Push Image and Deploy
 
-on:
-  push:
-    branches:
-      - main
+env:
+   SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
+   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+   AWS_REGION: ${{ secrets.AWS_REGION }}
+   S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+   S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+   S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+   MONGO_URL: ${{secrets.MONGO_URL}}
+   JWT_SECRET: ${{secrets.JWT_SECRET}}
+
+   SERVER_URL: ${{vars.SERVER_URL}}
+   SSH_HOST: ${{ vars.SSH_HOST }}
+   SSH_USERNAME: ${{ vars.SSH_USERNAME }}
+   TELEGRAM_TOKEN: ${{vars.TELEGRAM_TOKEN}}
+   IMAGE_NAME: ${{vars.DOCKER_IMAGE_NAME}}
+   ENABLE_SSL: ${{ vars.ENABLE_SSL }}
+on: 
+   push:
+     branches:
+        -main
 
 jobs:
-  run_test_job:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: executing remote ssh commands using ssh key
-        uses: appleboy/ssh-action@v1.1.0
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_SECRET_KEY }}
-          script: "cd /home/ubuntu && ./clinic.sh"
+    build:
+        runs-on: ubuntu-latest
 
+        steps:
+           - name: Checkout node
+             uses: actions/checkout@v4
+            
+           - name: Login to DockerHub
+             uses: echo $DOCKERHUB_TOKEN | docker login -u $DOCKERHUB_USERNAME --password-stdin
+
+           - name: Build Docker Image
+             run: docker build -t $IMAGE_NAME:latest .
+
+           - name: Push Docker Image
+             run: docker push $IMAGE_NAME:latest
+
+        
 

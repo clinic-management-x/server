@@ -30,7 +30,7 @@ import { SocketService } from "src/socket/socket.service";
         ]),
         BullModule.forRoot({
             connection: {
-                host: "localhost",
+                host: "redis",
                 port: 6379,
             },
         }),
