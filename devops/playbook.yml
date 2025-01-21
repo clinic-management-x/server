@@ -23,6 +23,10 @@
         ansible.builtin.apt:
             update_cache: yes
 
+      - name: Log the DOMAIN_NAME
+        debug:
+            msg: "The DOMAIN_NAME is {{ DOMAIN_NAME }}"
+
       - name: Docker install
         ansible.builtin.apt:
             name: docker.io
@@ -77,7 +81,7 @@
       - name: Wait for docker container to start
         ansible.builtin.wait_for:
             host: localhost
-            port: "{{ AAPP_PORT }}"
+            port: "{{ APP_PORT }}"
             delay: 5
             timeout: 60
 
