@@ -1,0 +1,111 @@
+- name: Deploy clinic server
+  hosts: all
+  become: true
+  vars:
+      DOCKER_IMAGE_NAME: "{{ image_name }}"
+      DOCKERHUB_USERNAME: "{{dockerhub_username}}"
+      DOCKERHUB_TOKEN: "{{dockerhub_token}}"
+      DOMAIN_NAME: "{{ domain_name }}"
+      NGINX_CONFIG_FILE: /etc/nginx/sites-available/{{ DOMAIN_NAME }}.conf
+      NGINX_ENABLE_FILE: /etc/nginx/sites-enabled/{{ DOMAIN_NAME }}.conf
+      ENABLE_SSL: if "{{enable_ssl}}" true else false
+      APP_PORT: 8000
+      SWAP_SIZE: 2048
+  tasks:
+      - name: Configure swap
+        include_role:
+            name: geerlingguy.swap
+        vars:
+            swap_file_size_mb: "{{ SWAP_SIZE }}"
+            swap_swappiness: "10"
+
+      - name: Apt update
+        ansible.builtin.apt:
+            update_cache: yes
+
+      - name: Docker install
+        ansible.builtin.apt:
+            name: docker.io
+            state: present
+
+      - name: Docker service start
+        ansible.builtin.service:
+            name: docker
+            state: started
+            enabled: yes
+
+      - name: Nginx install
+        ansible.builtin.apt:
+            name: nginx
+            state: present
+
+      - name: Certbot and nginx plugin install
+        ansible.builtin.apt:
+            name: "{{ item }}"
+            state: present
+        when: "{{ ENABLE_SSL }}"
+        with_items:
+            - certbot
+            - python3-certbot-nginx
+
+      - name: Login to dockerhub_token
+        community.docker.docker_login:
+            username: "{{ DOCKERHUB_USERNAME }}"
+            password: "{{ DOCKERHUB_TOKEN }}"
+
+      - name: Pull docker image
+        community.docker.docker_image:
+            name: "{{ DOCKER_IMAGE_NAME }}"
+            source: pull
+            force_source: yes
+
+      - name: Remove docker container if exists
+        community.docker.docker_container:
+            name: "{{ DOMAIN_NAME }}"
+            state: absent
+
+      - name: Run docker container
+        community.docker.docker_container:
+            name: "{{ DOMAIN_NAME }}"
+            image: "{{ DOCKER_IMAGE_NAME }}"
+            image_name_mismatch: recreate
+            state: started
+            restart_policy: always
+            ports:
+                - "{{APP_PORT}}:8000"
+
+      - name: Wait for docker container to start
+        ansible.builtin.wait_for:
+            host: localhost
+            port: "{{ AAPP_PORT }}"
+            delay: 5
+            timeout: 60
+
+      - name: Check Nginx config file exists
+        ansible.builtin.stat:
+            path: "{{ NGINX_CONFIG_FILE }}"
+        register: nginx_config
+
+      - name: Copy Nginx conf
+        ansible.builtin.template:
+            src: "nginx.conf.j2"
+            dest: "/etc/nginx/sites-available/{{ DOMAIN_NAME }}.conf"
+        when: not nginx_config.stat.exists
+
+      - name: Enable nginx configuration
+        ansible.builtin.file:
+            src: "{{ NGINX_CONFIG_FILE }}"
+            dest: "{{ NGINX_ENABLE_FILE }}"
+            state: link
+        when: not nginx_config.stat.exists
+        notify: Restart Nginx
+
+      - name: Install SSL certificate
+        command: "certbot --nginx -d {{ DOMAIN_NAME }} -n --agree-tos --email shwehnit14@gmail.com"
+        when: ENABLE_SSL
+
+  handlers:
+      - name: Restart Nginx
+        ansible.builtin.service:
+            name: nginx
+            state: reloaded

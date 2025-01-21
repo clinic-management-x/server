@@ -1,43 +1,45 @@
 name: Build and Push Image and Deploy
 
 env:
-   SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
-   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-   AWS_REGION: ${{ secrets.AWS_REGION }}
-   S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
-   S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
-   S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-   MONGO_URL: ${{secrets.MONGO_URL}}
-   JWT_SECRET: ${{secrets.JWT_SECRET}}
+    SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
+    DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+    DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+    AWS_REGION: ${{ secrets.AWS_REGION }}
+    S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+    S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+    S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+    MONGO_URL: ${{secrets.MONGO_URL}}
+    JWT_SECRET: ${{secrets.JWT_SECRET}}
+    DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
 
-   SERVER_URL: ${{vars.SERVER_URL}}
-   SSH_HOST: ${{ vars.SSH_HOST }}
-   SSH_USERNAME: ${{ vars.SSH_USERNAME }}
-   TELEGRAM_TOKEN: ${{vars.TELEGRAM_TOKEN}}
-   IMAGE_NAME: ${{vars.DOCKER_IMAGE_NAME}}
-   ENABLE_SSL: ${{ vars.ENABLE_SSL }}
-on: 
-   push:
-     branches:
-        - main
+    SERVER_URL: ${{vars.SERVER_URL}}
+    SSH_HOST: ${{ vars.SSH_HOST }}
+    SSH_USERNAME: ${{ vars.SSH_USERNAME }}
+    TELEGRAM_TOKEN: ${{vars.TELEGRAM_TOKEN}}
+    IMAGE_NAME: ${{vars.DOCKER_IMAGE_NAME}}
+    ENABLE_SSL: ${{ vars.ENABLE_SSL }}
+
+on:
+    push:
+        branches:
+            - main
 
 jobs:
     build:
         runs-on: ubuntu-latest
 
         steps:
-           - name: Checkout node
-             uses: actions/checkout@v4
-            
-           - name: Login to DockerHub
-             run: echo $DOCKERHUB_TOKEN | docker login -u $DOCKERHUB_USERNAME --password-stdin
-                 
-           - name: Build Docker Image
-             run: docker build -t $IMAGE_NAME:latest .
+            - name: Checkout node
+              uses: actions/checkout@v4
 
-           - name: Push Docker Image
-             run: docker push $IMAGE_NAME:latest
+            - name: Login to DockerHub
+              run: echo $DOCKERHUB_TOKEN | docker login -u $DOCKERHUB_USERNAME --password-stdin
+
+            - name: Build Docker Image
+              run: docker build -t $IMAGE_NAME:latest .
+
+            - name: Push Docker Image
+              run: docker push $IMAGE_NAME:latest
 
     deploy:
         runs-on: ubuntu-latest
@@ -45,31 +47,37 @@ jobs:
         steps:
             - name: Checkout node
               uses: actions/checkout@v4
-            
+
             - name: Create SSH key
               run: |
-                echo "$SSH_PRIVATE_KEY" > private.key
-                chmod 600 private.key
-                eval `ssh-agent -s`
-                ssh-add private.key
-                mkdir -p ~/.ssh
-                touch ~/.ssh/known_hosts
-                chmod 644 ~/.ssh/known_hosts
-                ssh-keyscan $SSH_HOST >> ~/.ssh/known_hosts
+                  echo "$SSH_PRIVATE_KEY" > private.key
+                  chmod 600 private.key
+                  eval `ssh-agent -s`
+                  ssh-add private.key
+                  mkdir -p ~/.ssh
+                  touch ~/.ssh/known_hosts
+                  chmod 644 ~/.ssh/known_hosts
+                  ssh-keyscan $SSH_HOST >> ~/.ssh/known_hosts
 
             - name: Install ansible
               run: |
-                sudo apt update
-                sudo apt install -y ansible
+                  sudo apt update
+                  sudo apt install -y ansible
 
-            
             - name: Create ansible inventory
               run: |
-                echo "server ansible_host=$SSH_HOST ansible_user=$SSH_USERNAME ansible_ssh_private_key_file=private.key" >> inventory
+                  echo "server ansible_host=$SSH_HOST ansible_user=$SSH_USERNAME ansible_ssh_private_key_file=private.key" >> inventory
 
             - name: Install Ansible roles
               run: |
-                ansible-galaxy install geerlingguy.swap
+                  ansible-galaxy install geerlingguy.swap
 
-        
-
+            - name: Run ansible playbook
+              run: |
+                  ansible-playbook -i inventory \
+                    --extra-vars "image_name=$IMAGE_NAME" \
+                    --extra-vars "domain_name=$DOMAIN_NAME" \
+                    --extra-vars "dockerhub_username=$DOCKERHUB_USERNAME" \
+                    --extra-vars "dockerhub_token=$DOCKERHUB_TOKEN" \
+                    --extra-vars "enable_ssl=$ENABLE_SSL" \
+                    devops/playbook.yml
