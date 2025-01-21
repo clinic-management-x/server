@@ -43,7 +43,7 @@
         ansible.builtin.apt:
             name: "{{ item }}"
             state: present
-        when: "{{ ENABLE_SSL }}"
+        when: ENABLE_SSL
         with_items:
             - certbot
             - python3-certbot-nginx
