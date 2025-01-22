@@ -28,6 +28,11 @@
             swap_file_size_mb: "{{ SWAP_SIZE }}"
             swap_swappiness: "10"
 
+      - name: Debug variables
+        ansible.builtin.debug:
+            msg:
+                - "TELEGRAM_TOKEN: {{ TELEGRAM_TOKEN }}"
+
       - name: Apt update
         ansible.builtin.apt:
             update_cache: yes
