@@ -1,7 +1,7 @@
 version: "3"
 services:
   app:
-    image: "{{ IMAGE_NAME }}:latest"
+    image: "{{ DOCKER_IMAGE_NAME }}:latest"
     container_name: "{{ DOMAIN_NAME }}"
     ports:
       - "8000:8000"
