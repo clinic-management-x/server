@@ -93,6 +93,11 @@
             cmd: docker-compose pull
             chdir: /srv/clinic
 
+      - name: Remove docker container if exists
+        community.docker.docker_container:
+            name: "{{ DOMAIN_NAME }}"
+            state: absent
+
       - name: Start application with docker-compose
         ansible.builtin.command:
             cmd: docker-compose up -d
