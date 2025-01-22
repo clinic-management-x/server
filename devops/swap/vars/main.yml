@@ -1,0 +1,4 @@
+---
+# vars file for swap
+SWAP_SIZE: 2048
+SWAP_SWAPPINESS: 10

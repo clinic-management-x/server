@@ -1,0 +1,8 @@
+---
+# tasks file for swap
+- name: Configure swap
+  include_role:
+      name: geerlingguy.swap
+  vars:
+      swap_file_size_mb: "{{ SWAP_SIZE }}"
+      swap_swappiness: "{{ SWAP_SWAPPINESS }}"

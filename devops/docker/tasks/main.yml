@@ -1,0 +1,51 @@
+---
+# tasks file for docker
+- name: Docker install
+  ansible.builtin.apt:
+      name: docker.io
+      state: present
+
+- name: Docker service start
+  ansible.builtin.service:
+      name: docker
+      state: started
+      enabled: yes
+
+- name: Docker install
+  ansible.builtin.apt:
+      name: docker-compose
+      state: present
+
+- name: Create application directory
+  ansible.builtin.file:
+      path: /srv/clinic
+      state: directory
+
+- name: Debug IMAGE_NAME
+  ansible.builtin.debug:
+      var: DOCKER_IMAGE_NAME
+
+- name: Copy docker-compose.yml
+  ansible.builtin.template:
+      src: "docker-compose.yml.j2"
+      dest: "/srv/clinic/docker-compose.yml"
+
+- name: Login to dockerhub_token
+  community.docker.docker_login:
+      username: "{{ DOCKERHUB_USERNAME }}"
+      password: "{{ DOCKERHUB_TOKEN }}"
+
+- name: Pull the latest image
+  ansible.builtin.command:
+      cmd: docker-compose pull
+      chdir: /srv/clinic
+
+- name: Remove docker container if exists
+  community.docker.docker_container:
+      name: "{{ DOMAIN_NAME }}"
+      state: absent
+
+- name: Start application with docker-compose
+  ansible.builtin.command:
+      cmd: docker-compose up -d
+      chdir: /srv/clinic

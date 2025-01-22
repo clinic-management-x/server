@@ -1,0 +1,38 @@
+---
+# tasks file for nginx
+- name: Nginx install
+  ansible.builtin.apt:
+      name: nginx
+      state: present
+
+- name: Certbot and nginx plugin install
+  ansible.builtin.apt:
+      name: "{{ item }}"
+      state: present
+  when: ENABLE_SSL
+  with_items:
+      - certbot
+      - python3-certbot-nginx
+
+- name: Check Nginx config file exists
+  ansible.builtin.stat:
+      path: "{{ NGINX_CONFIG_FILE }}"
+  register: nginx_config
+
+- name: Copy Nginx conf
+  ansible.builtin.template:
+      src: "nginx.conf.j2"
+      dest: "/etc/nginx/sites-available/{{ DOMAIN_NAME }}.conf"
+  when: not nginx_config.stat.exists
+
+- name: Enable nginx configuration
+  ansible.builtin.file:
+      src: "{{ NGINX_CONFIG_FILE }}"
+      dest: "{{ NGINX_ENABLE_FILE }}"
+      state: link
+  when: not nginx_config.stat.exists
+  notify: Restart Nginx
+
+- name: Install SSL certificate
+  command: "certbot --nginx -d {{ DOMAIN_NAME }} -n --agree-tos --email shwehnit14@gmail.com"
+  when: ENABLE_SSL
