@@ -21,10 +21,6 @@
       path: /srv/clinic
       state: directory
 
-- name: Debug IMAGE_NAME
-  ansible.builtin.debug:
-      var: DOCKER_IMAGE_NAME
-
 - name: Copy docker-compose.yml
   ansible.builtin.template:
       src: "docker-compose.yml.j2"
