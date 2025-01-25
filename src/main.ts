@@ -12,7 +12,7 @@ async function bootstrap() {
         })
     );
     app.enableCors({
-        origin: true,
+        origin: "https://technocare-client.rachelsho.com",
         methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
         credentials: true,
     });
