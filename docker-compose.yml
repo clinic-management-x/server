@@ -15,6 +15,11 @@ services:
             - S3_BUCKET_NAME=${S3_BUCKET_NAME}
             - SERVER_URL=${SERVER_URL}
             - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+            - NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
+            - NEW_RELIC_APP_NAME=${NEW_RELIC_APP_NAME}
+            - NEW_RELIC_NO_CONFIG_FILE=true
+            - NEW_RELIC_DISTRIBUTED_TRACING_ENABLED=true
+            - NEW_RELIC_LOG=stdout
         depends_on:
             - redis
         restart: always

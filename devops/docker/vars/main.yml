@@ -12,4 +12,6 @@ S3_SECRET_ACCESS_KEY: "{{ s3_secret_access_key }}"
 S3_BUCKET_NAME: "{{ s3_bucket_name }}"
 SERVER_URL: "{{ server_url }}"
 TELEGRAM_TOKEN: "{{ telegram_token }}"
+NEW_RELIC_LICENSE_KEY: "{{ new_relic_license_key }}"
+NEW_RELIC_APP_NAME: "{{ new_relic_app_name }}"
 APP_PORT: 8000

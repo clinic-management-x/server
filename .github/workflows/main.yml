@@ -11,6 +11,7 @@ env:
     MONGO_URL: ${{secrets.MONGO_URL}}
     JWT_SECRET: ${{secrets.JWT_SECRET}}
     DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+    NEW_RELIC_LICENSE_KEY: ${{ secrets.NEW_RELIC_LICENSE_KEY }}
 
     SERVER_URL: ${{vars.SERVER_URL}}
     SSH_HOST: ${{ vars.SSH_HOST }}
@@ -18,6 +19,7 @@ env:
     TELEGRAM_TOKEN: ${{vars.TELEGRAM_TOKEN}}
     IMAGE_NAME: ${{vars.DOCKER_IMAGE_NAME}}
     ENABLE_SSL: ${{ vars.ENABLE_SSL }}
+    NEW_RELIC_APP_NAME: ${{ vars.NEW_RELIC_APP_NAME }}
 
 on:
     push:
@@ -88,4 +90,6 @@ jobs:
                     --extra-vars "s3_bucket_name=$S3_BUCKET_NAME" \
                     --extra-vars "server_url=$SERVER_URL" \
                     --extra-vars "telegram_token=$TELEGRAM_TOKEN" \
+                    --extra-vars "new_relic_app_name=$NEW_RELIC_APP_NAME" \
+                    --extra-vars "new_relic_license_key=$NEW_RELIC_LICENSE_KEY" \
                     devops/playbook.yml
